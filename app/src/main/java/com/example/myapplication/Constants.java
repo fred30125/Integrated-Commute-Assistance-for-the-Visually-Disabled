@@ -32,7 +32,8 @@ public interface Constants {
     public static final String DEVICE_NAME = "device_name";
     public static final String TOAST = "toast";
 
-    public static final String API_KEY = "AIzaSyAJ_DFfOwB2ahyY0a0P4ezEg6Ix-89dEg4";
+
+   // public static final String API_KEY = "AIzaSyAJ_DFfOwB2ahyY0a0P4ezEg6Ix-89dEg4";
     public static final String BUS_URL = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?";
 
 }

@@ -64,7 +64,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-import static com.example.myapplication.Constants.API_KEY;
 import static com.example.myapplication.Constants.BUS_URL;
 
 public class MapsActivity extends FragmentActivity
@@ -91,6 +90,7 @@ public class MapsActivity extends FragmentActivity
     ArrayList<busData> busDataArrayList;
     ArrayList<Bitmap> bmpArray=new ArrayList<>();
     Bitmap bmp;
+    String google_maps_key;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         currentLocation=null;
@@ -109,6 +109,7 @@ public class MapsActivity extends FragmentActivity
         getSupportFragmentManager().beginTransaction()
         .replace(R.id.sample_content_fragment, bluetoothChatFragment)
         .commit();
+        google_maps_key=getResources().getString(R.string.google_maps_key);
         setMarker=findViewById(R.id.setMarker);
         setMarker.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -338,7 +339,7 @@ public class MapsActivity extends FragmentActivity
         busStationURL.append("location="+currentLocation.latitude+","+currentLocation.longitude );
         busStationURL.append("&radius=5000");
         busStationURL.append("&types=bus_station");
-        busStationURL.append("&key="+API_KEY);
+        busStationURL.append("&key="+google_maps_key);
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
                 .url(busStationURL.toString())

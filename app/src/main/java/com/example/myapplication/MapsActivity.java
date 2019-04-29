@@ -71,6 +71,7 @@ public class MapsActivity extends FragmentActivity
         implements OnMapReadyCallback,GoogleApiClient.ConnectionCallbacks,GoogleApiClient.OnConnectionFailedListener, LocationListener ,BluetoothChatFragment.OnMyListener{
 
     private GoogleMap mMap;
+    private int test=0;
     private Button setMarker;
     private GoogleApiClient googleApiClient;
     // Location請求物件

@@ -5,6 +5,7 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -25,6 +26,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -91,6 +93,13 @@ public class MapsActivity extends FragmentActivity
     ArrayList<Bitmap> bmpArray=new ArrayList<>();
     Bitmap bmp;
     String google_maps_key;
+    MapWrapperLayout mapWrapperLayout;
+
+
+    //--------------info window test--------------
+    private Button infoButton1, infoButton2;
+    private OnInfoWindowElemTouchListener infoButtonListener;
+    private ViewGroup infoWindow;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         currentLocation=null;
@@ -100,10 +109,12 @@ public class MapsActivity extends FragmentActivity
         lineOptions = new PolylineOptions(); // 多邊形
         bluetoothChatFragment=new BluetoothChatFragment();
         ActivityCompat.requestPermissions(MapsActivity.this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION},123);
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
         configGoogleApiClient();
         configLocationRequest();
         getSupportFragmentManager().beginTransaction()
@@ -126,11 +137,52 @@ public class MapsActivity extends FragmentActivity
         points= new ArrayList<>();
         markerTotal=0;
         moveTimes=false;
+
+        //--------info window設定------------
+        mapWrapperLayout = (MapWrapperLayout)findViewById(R.id.map_relative_layout);
+        this.infoWindow = (ViewGroup)getLayoutInflater().inflate(R.layout.custom_infowindow, null);
+        this.infoButton1 = (Button)infoWindow.findViewById(R.id.btnOne);
+        this.infoButton2 = (Button)infoWindow.findViewById(R.id.btnTwo);
+
+        this.infoButtonListener = new OnInfoWindowElemTouchListener(infoButton1, getResources().getDrawable(R.drawable.btn_bg), getResources().getDrawable(R.drawable.btn_bg)){
+            @Override
+            protected void onClickConfirmed(View v, Marker marker) {
+                // Here we can perform some action triggered after clicking the button
+                Toast.makeText(MapsActivity.this, "click on button 1", Toast.LENGTH_SHORT).show();
+            }
+        };
+        this.infoButton1.setOnTouchListener(infoButtonListener);
+
+        infoButtonListener = new OnInfoWindowElemTouchListener(infoButton2, getResources().getDrawable(R.drawable.btn_bg),getResources().getDrawable(R.drawable.btn_bg)){
+            @Override
+            protected void onClickConfirmed(View v, Marker marker) {
+                Toast.makeText(MapsActivity.this, "click on button 2", Toast.LENGTH_LONG).show();
+            }
+        };
+        infoButton2.setOnTouchListener(infoButtonListener);
+
     }
     //地圖creat好的時候執行
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        mapWrapperLayout.init(googleMap, getPixelsFromDp(this, 39 + 20));//39+20
         mMap = googleMap;
+        mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+            @Override
+            public View getInfoWindow(Marker marker) {
+                return null;
+            }
+            @Override
+            public View getInfoContents(Marker marker) {
+                // Setting up the infoWindow with current's marker info
+                infoButtonListener.setMarker(marker);
+
+                // We must call this to set the current marker and infoWindow references
+                // to the MapWrapperLayout
+                mapWrapperLayout.setMarkerWithInfoWindow(marker, infoWindow);
+                return infoWindow;
+            }
+        });
         mMap.getUiSettings().setZoomControlsEnabled(true);
         mMap.animateCamera(CameraUpdateFactory.zoomTo(16));
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
@@ -138,7 +190,6 @@ public class MapsActivity extends FragmentActivity
             public void onMapClick(LatLng latLng) {
                 if (currentLocation != null) {
                     Toast.makeText(MapsActivity.this, latLng.latitude + "," + latLng.longitude, Toast.LENGTH_LONG).show();
-
                     if(setMarkerStatus==true) {
                         points.add(latLng);
                         lineOptions = new PolylineOptions();
@@ -188,6 +239,13 @@ public class MapsActivity extends FragmentActivity
                 } else {
                     Log.d("onPostExecute", "draw line error!");
                 }
+            }
+        });
+
+        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng latLng) {
+
             }
         });
     }
@@ -402,4 +460,10 @@ public class MapsActivity extends FragmentActivity
             }
         });
     }
+    public static int getPixelsFromDp(Context context, float dp) {
+        final float scale = context.getResources().getDisplayMetrics().density;
+        return (int)(dp * scale + 0.5f);
+    }
+
+
 }

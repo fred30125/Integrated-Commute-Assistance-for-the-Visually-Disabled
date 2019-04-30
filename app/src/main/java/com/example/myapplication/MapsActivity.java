@@ -242,12 +242,12 @@ public class MapsActivity extends FragmentActivity
             }
         });
 
-        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+       /* mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
 
             }
-        });
+        });*/
     }
     //連API
     private synchronized void configGoogleApiClient(){

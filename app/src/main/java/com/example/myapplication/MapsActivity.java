@@ -30,7 +30,9 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.myapplication.common.logger.LogWrapper;
@@ -59,6 +61,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -88,6 +91,7 @@ public class MapsActivity extends FragmentActivity
     private BluetoothChatFragment bluetoothChatFragment;
     Boolean setMarkerStatus=false;
     int markerTotal;
+    ArrayList<MarkerOptions> markerArrayList;
     boolean moveTimes;
     ArrayList<busData> busDataArrayList;
     ArrayList<Bitmap> bmpArray=new ArrayList<>();
@@ -98,6 +102,7 @@ public class MapsActivity extends FragmentActivity
 
     //--------------info window test--------------
     private Button infoButton1, infoButton2;
+    private TextView routerID;
     private OnInfoWindowElemTouchListener infoButtonListener;
     private ViewGroup infoWindow;
     @Override
@@ -106,6 +111,7 @@ public class MapsActivity extends FragmentActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         points= new ArrayList<>(); // 所有點集合
+        markerArrayList=new ArrayList<>();
         lineOptions = new PolylineOptions(); // 多邊形
         bluetoothChatFragment=new BluetoothChatFragment();
         ActivityCompat.requestPermissions(MapsActivity.this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION},123);
@@ -143,12 +149,47 @@ public class MapsActivity extends FragmentActivity
         this.infoWindow = (ViewGroup)getLayoutInflater().inflate(R.layout.custom_infowindow, null);
         this.infoButton1 = (Button)infoWindow.findViewById(R.id.btnOne);
         this.infoButton2 = (Button)infoWindow.findViewById(R.id.btnTwo);
-
+        this.routerID=infoWindow.findViewById(R.id.RouterID);
         this.infoButtonListener = new OnInfoWindowElemTouchListener(infoButton1, getResources().getDrawable(R.drawable.btn_bg), getResources().getDrawable(R.drawable.btn_bg)){
             @Override
             protected void onClickConfirmed(View v, Marker marker) {
+                Toast.makeText(MapsActivity.this, routerID.getText(), Toast.LENGTH_SHORT).show();
                 // Here we can perform some action triggered after clicking the button
-                Toast.makeText(MapsActivity.this, "click on button 1", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(MapsActivity.this, "click on button 1", Toast.LENGTH_SHORT).show();
+                if(routerID.getText().equals("0")){
+                    Toast.makeText(MapsActivity.this, "沒辦法往前", Toast.LENGTH_SHORT).show();
+                }else if(markerTotal<2){
+                    Toast.makeText(MapsActivity.this, "沒辦法往前", Toast.LENGTH_SHORT).show();
+                }else{
+                    int ID=Integer.parseInt(routerID.getText().toString());
+                    LatLng tmp;
+                    tmp=points.get(ID);
+                    points.set(ID,points.get(ID-1));
+                    points.set(ID-1,tmp);
+
+                    tmp= markerArrayList.get(ID).getPosition();
+                    markerArrayList.get(ID).position(markerArrayList.get(ID-1).getPosition());
+                    markerArrayList.get(ID-1).position(tmp);
+                    mMap.clear();
+                    mMap.addMarker(new MarkerOptions().position(currentLocation).title("I'm here...").snippet("now"));
+                    for(int i =0;i<markerArrayList.size();i++){
+                        markerArrayList.get(i).title(i+"");
+                        mMap.addMarker(markerArrayList.get(i));
+                    }
+                    lineOptions = new PolylineOptions();
+                    lineOptions.add(currentLocation); // 加入所有座標點到多邊形
+                    lineOptions.addAll(points); // 加入所有座標點到多邊形
+                    lineOptions.width(10);
+                    lineOptions.color(Color.RED);
+                    if (lineOptions != null) {
+                        if (polyline != null) {
+                            polyline.remove();
+                        }
+                        polyline = mMap.addPolyline(lineOptions);
+                    } else {
+                        Log.d("onPostExecute", "draw line error!");
+                    }
+                }
             }
         };
         this.infoButton1.setOnTouchListener(infoButtonListener);
@@ -156,7 +197,43 @@ public class MapsActivity extends FragmentActivity
         infoButtonListener = new OnInfoWindowElemTouchListener(infoButton2, getResources().getDrawable(R.drawable.btn_bg),getResources().getDrawable(R.drawable.btn_bg)){
             @Override
             protected void onClickConfirmed(View v, Marker marker) {
-                Toast.makeText(MapsActivity.this, "click on button 2", Toast.LENGTH_LONG).show();
+                Toast.makeText(MapsActivity.this, routerID.getText(), Toast.LENGTH_SHORT).show();
+                // Here we can perform some action triggered after clicking the button
+                //Toast.makeText(MapsActivity.this, "click on button 1", Toast.LENGTH_SHORT).show();
+                if(routerID.getText().equals(markerArrayList.size()-1+"")){
+                    Toast.makeText(MapsActivity.this, "沒辦法往後", Toast.LENGTH_SHORT).show();
+                }else if(markerTotal<2){
+                    Toast.makeText(MapsActivity.this, "沒辦法往後", Toast.LENGTH_SHORT).show();
+                }else{
+                    int ID=Integer.parseInt(routerID.getText().toString());
+                    LatLng tmp;
+                    tmp=points.get(ID);
+                    points.set(ID,points.get(ID+1));
+                    points.set(ID+1,tmp);
+
+                    tmp= markerArrayList.get(ID).getPosition();
+                    markerArrayList.get(ID).position(markerArrayList.get(ID+1).getPosition());
+                    markerArrayList.get(ID+1).position(tmp);
+                    mMap.clear();
+                    mMap.addMarker(new MarkerOptions().position(currentLocation).title("I'm here...").snippet("now"));
+                    for(int i =0;i<markerArrayList.size();i++){
+                        markerArrayList.get(i).title(i+"");
+                        mMap.addMarker(markerArrayList.get(i));
+                    }
+                    lineOptions = new PolylineOptions();
+                    lineOptions.add(currentLocation); // 加入所有座標點到多邊形
+                    lineOptions.addAll(points); // 加入所有座標點到多邊形
+                    lineOptions.width(10);
+                    lineOptions.color(Color.RED);
+                    if (lineOptions != null) {
+                        if (polyline != null) {
+                            polyline.remove();
+                        }
+                        polyline = mMap.addPolyline(lineOptions);
+                    } else {
+                        Log.d("onPostExecute", "draw line error!");
+                    }
+                }
             }
         };
         infoButton2.setOnTouchListener(infoButtonListener);
@@ -174,13 +251,18 @@ public class MapsActivity extends FragmentActivity
             }
             @Override
             public View getInfoContents(Marker marker) {
-                // Setting up the infoWindow with current's marker info
-                infoButtonListener.setMarker(marker);
-
-                // We must call this to set the current marker and infoWindow references
-                // to the MapWrapperLayout
-                mapWrapperLayout.setMarkerWithInfoWindow(marker, infoWindow);
-                return infoWindow;
+                if(marker.getSnippet().equals("bus")||marker.getSnippet().equals("now")){
+                    return null;
+                }else {
+                    // Setting up the infoWindow with current's marker info
+                    infoButtonListener.setMarker(marker);
+                    // We must call this to set the current marker and infoWindow references
+                    // to the MapWrapperLayout
+                    mapWrapperLayout.setMarkerWithInfoWindow(marker, infoWindow);
+                    routerID.setText(marker.getTitle());
+                    Toast.makeText(MapsActivity.this, marker.getTitle(), Toast.LENGTH_LONG).show();
+                    return infoWindow;
+                }
             }
         });
         mMap.getUiSettings().setZoomControlsEnabled(true);
@@ -190,7 +272,7 @@ public class MapsActivity extends FragmentActivity
             public void onMapClick(LatLng latLng) {
                 if (currentLocation != null) {
                     Toast.makeText(MapsActivity.this, latLng.latitude + "," + latLng.longitude, Toast.LENGTH_LONG).show();
-                    if(setMarkerStatus==true) {
+                    if(setMarkerStatus) {
                         points.add(latLng);
                         lineOptions = new PolylineOptions();
                         lineOptions.add(currentLocation); // 加入所有座標點到多邊形
@@ -202,11 +284,14 @@ public class MapsActivity extends FragmentActivity
                                 polyline.remove();
                             }
                             polyline = mMap.addPolyline(lineOptions);
-                            mMap.addMarker(new MarkerOptions()
+
+                            MarkerOptions tmpMarker=new MarkerOptions()
                                 .title(markerTotal+"")
+                                .snippet("router")
                                 .position(latLng)
-                                .draggable(true)
-                                );
+                                .draggable(true);
+                            mMap.addMarker(tmpMarker);
+                            markerArrayList.add(tmpMarker);
                             markerTotal++;
                             //mMap.addPolyline(lineOptions); // 畫出多邊形
                         } else {
@@ -226,6 +311,7 @@ public class MapsActivity extends FragmentActivity
             @Override
             public void onMarkerDragEnd(Marker marker) {
                 points.set(Integer.parseInt(marker.getTitle()),marker.getPosition());
+                markerArrayList.get(Integer.parseInt(marker.getTitle())).position(marker.getPosition());
                 lineOptions = new PolylineOptions();
                 lineOptions.add(currentLocation); // 加入所有座標點到多邊形
                 lineOptions.addAll(points); // 加入所有座標點到多邊形
@@ -242,12 +328,6 @@ public class MapsActivity extends FragmentActivity
             }
         });
 
-       /* mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-            @Override
-            public void onMapClick(LatLng latLng) {
-
-            }
-        });*/
     }
     //連API
     private synchronized void configGoogleApiClient(){
@@ -320,7 +400,7 @@ public class MapsActivity extends FragmentActivity
        // mMap.clear();
         // 設定目前位置的marker
         if (currentMarker == null) {
-            currentMarker = mMap.addMarker(new MarkerOptions().position(latLng).title("I'm here..."));
+            currentMarker = mMap.addMarker(new MarkerOptions().position(latLng).title("I'm here...").snippet("now"));
            // points.set(0,latLng);
         } else {
             currentMarker.setPosition(latLng);
@@ -332,21 +412,9 @@ public class MapsActivity extends FragmentActivity
             moveTimes=true;
             requestBusStation();
         }
-        lineOptions= new PolylineOptions();
-        lineOptions.add(latLng); // 加入所有座標點到多邊形
-        lineOptions.addAll(points); // 加入所有座標點到多邊形
-        lineOptions.width(10);
-        lineOptions.color(Color.RED);
-        if(lineOptions != null) {
-            if(polyline != null){
-                polyline.remove();
-            }
-            polyline = this.mMap.addPolyline(lineOptions);
-            //mMap.addPolyline(lineOptions); // 畫出多邊形
-        }
-        else {
-            Log.d("onPostExecute","draw line error!");
-        }
+
+
+
         //float results[]=new float[1];
         //現在緯度,現在經度,目標緯度,目標經度,
         //Location.distanceBetween(latLng.latitude, latLng.longitude, tmp.latitude, tmp.longitude, results);
@@ -448,8 +516,11 @@ public class MapsActivity extends FragmentActivity
                             for(int i = 0;i<busDataArrayList.size();i++){
                                     mMap.addMarker(new MarkerOptions()
                                             .title(busDataArrayList.get(i).getName())
+                                            .snippet("bus")
                                             .position(busDataArrayList.get(i).getLatLng())
                                             .icon(BitmapDescriptorFactory.fromBitmap(bmpArray.get(i))));
+
+
                             }
                         }
                     });

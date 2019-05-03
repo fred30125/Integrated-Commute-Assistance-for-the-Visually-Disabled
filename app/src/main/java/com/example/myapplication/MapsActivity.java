@@ -189,6 +189,15 @@ public class MapsActivity extends FragmentActivity
                     } else {
                         Log.d("onPostExecute", "draw line error!");
                     }
+                    if(busDataArrayList!=null) {
+                        for (int i = 0; i < busDataArrayList.size(); i++) {
+                            mMap.addMarker(new MarkerOptions()
+                                    .title(busDataArrayList.get(i).getName())
+                                    .snippet("bus")
+                                    .position(busDataArrayList.get(i).getLatLng())
+                                    .icon(BitmapDescriptorFactory.fromBitmap(bmpArray.get(i))));
+                        }
+                    }
                 }
             }
         };
@@ -233,6 +242,18 @@ public class MapsActivity extends FragmentActivity
                     } else {
                         Log.d("onPostExecute", "draw line error!");
                     }
+                    if(busDataArrayList!=null) {
+                        for (int i = 0; i < busDataArrayList.size(); i++) {
+                            mMap.addMarker(new MarkerOptions()
+                                    .title(busDataArrayList.get(i).getName())
+                                    .snippet("bus")
+                                    .position(busDataArrayList.get(i).getLatLng())
+                                    .icon(BitmapDescriptorFactory.fromBitmap(bmpArray.get(i))));
+                        }
+                    }
+
+
+
                 }
             }
         };
@@ -519,8 +540,6 @@ public class MapsActivity extends FragmentActivity
                                             .snippet("bus")
                                             .position(busDataArrayList.get(i).getLatLng())
                                             .icon(BitmapDescriptorFactory.fromBitmap(bmpArray.get(i))));
-
-
                             }
                         }
                     });

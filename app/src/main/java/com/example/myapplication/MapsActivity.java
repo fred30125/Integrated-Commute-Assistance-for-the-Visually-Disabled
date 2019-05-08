@@ -11,6 +11,11 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorListener;
+import android.hardware.SensorManager;
 import android.location.Location;
 
 import android.os.Bundle;
@@ -27,6 +32,8 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.RotateAnimation;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -47,6 +54,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -98,6 +106,11 @@ public class MapsActivity extends FragmentActivity
     Bitmap bmp;
     String google_maps_key;
     MapWrapperLayout mapWrapperLayout;
+    //---------------指南針---------------------
+    private SensorManager manager;
+    private SensorListener listener = new SensorListener();
+    private float lastRotateDegree;
+    private long lastUpdatetime;
 
 
     //--------------info window test--------------
@@ -143,6 +156,25 @@ public class MapsActivity extends FragmentActivity
         points= new ArrayList<>();
         markerTotal=0;
         moveTimes=false;
+        //--------指南針--------------------
+       // manager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+
+
+        manager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
+        Sensor magnetic = null;
+        if (manager != null) {
+            magnetic = manager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        }
+        Sensor acceleromter = null;
+        if (manager != null) {
+            acceleromter = manager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        }
+        if (manager != null) {
+            manager.registerListener(listener, magnetic, SensorManager.SENSOR_DELAY_GAME);
+        }
+        if (manager != null) {
+            manager.registerListener(listener, acceleromter, SensorManager.SENSOR_DELAY_GAME);
+        }
 
         //--------info window設定------------
         mapWrapperLayout = (MapWrapperLayout)findViewById(R.id.map_relative_layout);
@@ -447,7 +479,7 @@ public class MapsActivity extends FragmentActivity
     }
     @Override
     protected void onResume() {
-        super.onResume();
+
         if (mMap == null) { //取得地圖
             ((SupportMapFragment) getSupportFragmentManager().
                     findFragmentById(R.id.map)).getMapAsync(this);
@@ -457,9 +489,16 @@ public class MapsActivity extends FragmentActivity
             Log.i("GPS", "onResume");
             googleApiClient.connect();
         }
+
+        Sensor sensor = manager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
+        manager.registerListener(listener, sensor,
+                SensorManager.SENSOR_DELAY_GAME);
+
+        super.onResume();
     }
     @Override
     protected void onPause() {
+        manager.unregisterListener(listener);
         super.onPause();
         // 取消位置請求服務
   /*      if (googleApiClient.isConnected()) {
@@ -554,6 +593,57 @@ public class MapsActivity extends FragmentActivity
         final float scale = context.getResources().getDisplayMetrics().density;
         return (int)(dp * scale + 0.5f);
     }
+
+    private  class SensorListener implements SensorEventListener {
+        private float predegree = 0;
+
+        public void onSensorChanged(SensorEvent event) {
+
+            float[] magneticValues = new float[3];
+            float[] acceleromterValues = new float[3];
+            if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+                acceleromterValues = event.values.clone();
+            } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+                magneticValues = event.values.clone();
+            }
+            /*float[] R = new float[9];
+            float[] values = new float[3];
+            SensorManager.getRotationMatrix(R, null, acceleromterValues, magneticValues);
+            SensorManager.getOrientation(R, values);*/
+           // float roteteDegree = -(float) Math.toDegrees(values[0]);
+            float roteteDegree = -(float) Math.round(event.values[0]);
+            Log.i("12345",roteteDegree+"");
+            if (roteteDegree < 0) roteteDegree = 360 + roteteDegree;
+            if (roteteDegree < 0 || roteteDegree > 360) return;
+            float offset = roteteDegree - lastRotateDegree;
+            if (Math.abs(offset) < 0.5f) return;
+            Log.i("1234",roteteDegree+"");
+            updateCamera(roteteDegree);
+            lastRotateDegree=roteteDegree;
+         /*   float degree = event.values[0];// 存放了方向值 90
+            RotateAnimation animation = new RotateAnimation(predegree, -degree,
+                    Animation.RELATIVE_TO_SELF, 0.5f,
+                    Animation.RELATIVE_TO_SELF, 0.5f);
+            animation.setDuration(200);
+
+            imageView.startAnimation(animation);
+            predegree = -degree;*/
+        }
+
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        }
+
+    }
+    private void updateCamera(float bearing) {
+        if(mMap!=null) {
+            CameraPosition oldPos = mMap.getCameraPosition();
+
+            CameraPosition pos = CameraPosition.builder(oldPos).bearing(bearing)
+                    .build();
+            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(pos));
+        }
+    }
+
 
 
 }

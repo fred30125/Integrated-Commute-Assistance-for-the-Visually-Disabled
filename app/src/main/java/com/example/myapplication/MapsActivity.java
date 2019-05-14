@@ -116,7 +116,7 @@ public class MapsActivity extends FragmentActivity
 
 
     //--------------info window test--------------
-    private Button infoButton1, infoButton2;
+    private Button infoButton1, infoButton2,infoButton3;
     private TextView routerID;
     private OnInfoWindowElemTouchListener infoButtonListener;
     private ViewGroup infoWindow;
@@ -192,6 +192,7 @@ public class MapsActivity extends FragmentActivity
         this.infoWindow = (ViewGroup)getLayoutInflater().inflate(R.layout.custom_infowindow, null);
         this.infoButton1 = (Button)infoWindow.findViewById(R.id.btnOne);
         this.infoButton2 = (Button)infoWindow.findViewById(R.id.btnTwo);
+        this.infoButton3 = (Button)infoWindow.findViewById(R.id.btnThree);
         this.routerID=infoWindow.findViewById(R.id.RouterID);
         this.infoButtonListener = new OnInfoWindowElemTouchListener(infoButton1, getResources().getDrawable(R.drawable.btn_bg), getResources().getDrawable(R.drawable.btn_bg)){
             @Override
@@ -214,37 +215,6 @@ public class MapsActivity extends FragmentActivity
                     markerArrayList.get(ID).position(markerArrayList.get(ID-1).getPosition());
                     markerArrayList.get(ID-1).position(tmp);
                     //----------------draw------------------------------------
-/*                   mMap.clear();
-                    mMap.addMarker(new MarkerOptions().position(currentLocation).title("I'm here...").snippet("now"));
-                    for(int i =0;i<markerArrayList.size();i++){
-                        markerArrayList.get(i).title(i+"");
-                        mMap.addMarker(markerArrayList.get(i));
-                    }
-                    lineOptions = new PolylineOptions();
-                    lineOptions.add(currentLocation); // 加入所有座標點到多邊形
-                    lineOptions.addAll(points); // 加入所有座標點到多邊形
-                    lineOptions.width(10);
-                    lineOptions.color(Color.RED);
-                    if (lineOptions != null) {
-                        if (polyline != null) {
-                            polyline.remove();
-                        }
-                        polyline = mMap.addPolyline(lineOptions);
-                    } else {
-                        Log.d("onPostExecute", "draw line error!");
-                    }
-                    if(busDataArrayList!=null) {
-                        for (int i = 0; i < busDataArrayList.size(); i++) {
-                            mMap.addMarker(new MarkerOptions()
-                                    .title(busDataArrayList.get(i).getName())
-                                    .snippet("bus")
-                                    .position(busDataArrayList.get(i).getLatLng())
-                                    .icon(BitmapDescriptorFactory.fromBitmap(bmpArray.get(i))));
-                        }
-                    }
-                    if (dirPolyline.length() > 0){
-                        drawPath(decodePoly(dirPolyline));
-                    }*/
                     drawAll();
                 }
             }
@@ -271,41 +241,23 @@ public class MapsActivity extends FragmentActivity
                     tmp= markerArrayList.get(ID).getPosition();
                     markerArrayList.get(ID).position(markerArrayList.get(ID+1).getPosition());
                     markerArrayList.get(ID+1).position(tmp);
-/*                    mMap.clear();
-                    mMap.addMarker(new MarkerOptions().position(currentLocation).title("I'm here...").snippet("now"));
-                    for(int i =0;i<markerArrayList.size();i++){
-                        markerArrayList.get(i).title(i+"");
-                        mMap.addMarker(markerArrayList.get(i));
-                    }
-                    lineOptions = new PolylineOptions();
-                    lineOptions.add(currentLocation); // 加入所有座標點到多邊形
-                    lineOptions.addAll(points); // 加入所有座標點到多邊形
-                    lineOptions.width(10);
-                    lineOptions.color(Color.RED);
-                    if (lineOptions != null) {
-                        if (polyline != null) {
-                            polyline.remove();
-                        }
-                        polyline = mMap.addPolyline(lineOptions);
-                    } else {
-                        Log.d("onPostExecute", "draw line error!");
-                    }
-                    if(busDataArrayList!=null) {
-                        for (int i = 0; i < busDataArrayList.size(); i++) {
-                            mMap.addMarker(new MarkerOptions()
-                                    .title(busDataArrayList.get(i).getName())
-                                    .snippet("bus")
-                                    .position(busDataArrayList.get(i).getLatLng())
-                                    .icon(BitmapDescriptorFactory.fromBitmap(bmpArray.get(i))));
-                        }
-                    }
-
-*/
+//-----------------draw
                     drawAll();
                 }
             }
         };
         infoButton2.setOnTouchListener(infoButtonListener);
+
+
+        infoButtonListener = new OnInfoWindowElemTouchListener(infoButton3, getResources().getDrawable(R.drawable.btn_bg),getResources().getDrawable(R.drawable.btn_bg)){
+            @Override
+            protected void onClickConfirmed(View v, Marker marker) {
+                Toast.makeText(MapsActivity.this, "Hello Test", Toast.LENGTH_SHORT).show();
+
+
+            }
+        };
+        infoButton3.setOnTouchListener(infoButtonListener);
 
     }
     //地圖creat好的時候執行

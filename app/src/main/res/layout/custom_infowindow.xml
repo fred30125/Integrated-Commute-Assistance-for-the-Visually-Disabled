@@ -21,19 +21,26 @@
 
             <Button
                 android:id="@+id/btnOne"
-                android:layout_width="120dip"
+                android:layout_width="80dip"
                 android:layout_height="40dip"
                 android:background="@drawable/btn_bg"
-                android:text="one btn" />
+                android:text="往前" />
 
 
             <Button
                 android:id="@+id/btnTwo"
-                android:layout_width="120dip"
+                android:layout_width="80dip"
                 android:layout_height="40dip"
                 android:layout_marginLeft="10dip"
                 android:background="@drawable/btn_bg"
-                android:text="two btn" />
+                android:text="往後" />
+            <Button
+                android:id="@+id/btnThree"
+                android:layout_width="80dip"
+                android:layout_height="40dip"
+                android:layout_marginLeft="10dip"
+                android:background="@drawable/btn_bg"
+                android:text="Test" />
 
         </LinearLayout>
     </LinearLayout>

@@ -67,6 +67,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.URL;
+import java.text.MessageFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -84,7 +85,7 @@ public class MapsActivity extends FragmentActivity
 
     private GoogleMap mMap;
     private int test=0;
-    private Button setMarker;
+    private Button setMarker,btnRouter;
     private GoogleApiClient googleApiClient;
     // Location請求物件
     private LocationRequest locationRequest;
@@ -96,6 +97,7 @@ public class MapsActivity extends FragmentActivity
     ArrayList<LatLng> points;
     PolylineOptions lineOptions;
     Polyline polyline;
+    String dirPolyline;
     private BluetoothChatFragment bluetoothChatFragment;
     Boolean setMarkerStatus=false;
     int markerTotal;
@@ -141,6 +143,15 @@ public class MapsActivity extends FragmentActivity
         .commit();
         google_maps_key=getResources().getString(R.string.google_maps_key);
         setMarker=findViewById(R.id.setMarker);
+        btnRouter=findViewById(R.id.getRouter);
+        btnRouter.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!points.isEmpty()){
+                    getDirection(currentLocation,points.get(points.size()-1));
+                }
+            }
+        });
         setMarker.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -165,16 +176,16 @@ public class MapsActivity extends FragmentActivity
         if (manager != null) {
             magnetic = manager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         }
-        Sensor acceleromter = null;
+       /* Sensor acceleromter = null;
         if (manager != null) {
             acceleromter = manager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        }
+        }*/
         if (manager != null) {
             manager.registerListener(listener, magnetic, SensorManager.SENSOR_DELAY_GAME);
         }
-        if (manager != null) {
+       /* if (manager != null) {
             manager.registerListener(listener, acceleromter, SensorManager.SENSOR_DELAY_GAME);
-        }
+        }*/
 
         //--------info window設定------------
         mapWrapperLayout = (MapWrapperLayout)findViewById(R.id.map_relative_layout);
@@ -202,7 +213,8 @@ public class MapsActivity extends FragmentActivity
                     tmp= markerArrayList.get(ID).getPosition();
                     markerArrayList.get(ID).position(markerArrayList.get(ID-1).getPosition());
                     markerArrayList.get(ID-1).position(tmp);
-                    mMap.clear();
+                    //----------------draw------------------------------------
+/*                   mMap.clear();
                     mMap.addMarker(new MarkerOptions().position(currentLocation).title("I'm here...").snippet("now"));
                     for(int i =0;i<markerArrayList.size();i++){
                         markerArrayList.get(i).title(i+"");
@@ -230,6 +242,10 @@ public class MapsActivity extends FragmentActivity
                                     .icon(BitmapDescriptorFactory.fromBitmap(bmpArray.get(i))));
                         }
                     }
+                    if (dirPolyline.length() > 0){
+                        drawPath(decodePoly(dirPolyline));
+                    }*/
+                    drawAll();
                 }
             }
         };
@@ -255,7 +271,7 @@ public class MapsActivity extends FragmentActivity
                     tmp= markerArrayList.get(ID).getPosition();
                     markerArrayList.get(ID).position(markerArrayList.get(ID+1).getPosition());
                     markerArrayList.get(ID+1).position(tmp);
-                    mMap.clear();
+/*                    mMap.clear();
                     mMap.addMarker(new MarkerOptions().position(currentLocation).title("I'm here...").snippet("now"));
                     for(int i =0;i<markerArrayList.size();i++){
                         markerArrayList.get(i).title(i+"");
@@ -284,8 +300,8 @@ public class MapsActivity extends FragmentActivity
                         }
                     }
 
-
-
+*/
+                    drawAll();
                 }
             }
         };
@@ -297,6 +313,7 @@ public class MapsActivity extends FragmentActivity
     public void onMapReady(GoogleMap googleMap) {
         mapWrapperLayout.init(googleMap, getPixelsFromDp(this, 39 + 20));//39+20
         mMap = googleMap;
+
         mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
             @Override
             public View getInfoWindow(Marker marker) {
@@ -525,6 +542,7 @@ public class MapsActivity extends FragmentActivity
         busStationURL.append("location="+currentLocation.latitude+","+currentLocation.longitude );
         busStationURL.append("&radius=5000");
         busStationURL.append("&types=bus_station");
+        busStationURL.append("&language=zh-TW");
         busStationURL.append("&key="+google_maps_key);
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
@@ -593,12 +611,10 @@ public class MapsActivity extends FragmentActivity
         final float scale = context.getResources().getDisplayMetrics().density;
         return (int)(dp * scale + 0.5f);
     }
-
     private  class SensorListener implements SensorEventListener {
         private float predegree = 0;
 
         public void onSensorChanged(SensorEvent event) {
-
             float[] magneticValues = new float[3];
             float[] acceleromterValues = new float[3];
             if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
@@ -606,12 +622,12 @@ public class MapsActivity extends FragmentActivity
             } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
                 magneticValues = event.values.clone();
             }
-            /*float[] R = new float[9];
+            float[] R = new float[9];
             float[] values = new float[3];
             SensorManager.getRotationMatrix(R, null, acceleromterValues, magneticValues);
-            SensorManager.getOrientation(R, values);*/
-           // float roteteDegree = -(float) Math.toDegrees(values[0]);
-            float roteteDegree = -(float) Math.round(event.values[0]);
+            SensorManager.getOrientation(R, values);
+            //float roteteDegree = -(float) Math.toDegrees(values[0]);
+            float roteteDegree = (float) Math.round(event.values[0]);
             Log.i("12345",roteteDegree+"");
             if (roteteDegree < 0) roteteDegree = 360 + roteteDegree;
             if (roteteDegree < 0 || roteteDegree > 360) return;
@@ -637,13 +653,150 @@ public class MapsActivity extends FragmentActivity
     private void updateCamera(float bearing) {
         if(mMap!=null) {
             CameraPosition oldPos = mMap.getCameraPosition();
-
             CameraPosition pos = CameraPosition.builder(oldPos).bearing(bearing)
                     .build();
             mMap.moveCamera(CameraUpdateFactory.newCameraPosition(pos));
         }
     }
 
+    private String getDirectionsUrl(LatLng origin,LatLng dest){
+
+        // Origin of route
+        String str_origin = "origin="+origin.latitude+","+origin.longitude;
+
+        // Destination of route
+        String str_dest = "destination="+dest.latitude+","+dest.longitude;
+
+        // Sensor enabled
+        String sensor = "sensor=false";
+
+        // Waypoints
+        String waypoints = "";
+        for(int i=0;i<points.size()-1;i++){
+            LatLng point  = (LatLng) points.get(i);
+            if(i==0)
+                waypoints = "waypoints=";
+            waypoints += point.latitude + "," + point.longitude + "|";
+        }
+
+        // Building the parameters to the web service
+        String parameters = str_origin+"&"+str_dest+"&"+sensor+"&"+waypoints;
+
+        // Output format
+        String output = "json";
+
+        // Building the url to the web service
+        String url = "https://maps.googleapis.com/maps/api/directions/"+output+"?"+parameters+"&language=zh-TW&sensor=true&mode=walking&key="+google_maps_key;
+
+        return url;
+    }
+    private void getDirection(LatLng origin,LatLng dest){
+        String mapAPI = getDirectionsUrl(origin,dest);
+        String url = MessageFormat.format(mapAPI, origin, dest);
+        Log.i("direction test url",url);
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+        Call call=client.newCall(request);
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                try {
+                    JSONObject jsonObject = new JSONObject(response.body().string());
+                    Log.i("direction test -1",jsonObject.toString());
+                    JSONArray routeObject = jsonObject.getJSONArray("routes");
+                    Log.i("direction test -2",routeObject.toString());
+                    dirPolyline=new String();
+                    dirPolyline= routeObject.getJSONObject(0).getJSONObject("overview_polyline").getString("points");
+                    drawAll();
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+    private  void drawPath(final ArrayList<LatLng>points){
+        mMap.addPolyline(new PolylineOptions().
+        addAll(points).
+        width(5).
+        color(Color.BLUE));
+
+    }
+    private ArrayList<LatLng> decodePoly(String encoded){
+        ArrayList<LatLng>poly = new ArrayList<>();
+        int index=0,len=encoded.length();
+        int lat=0,lng=0;
+        while (index<len){
+            int b,shift=0,result=0;
+            do{
+                b=encoded.charAt(index++)-63;
+                result |= (b &0x1f)<<shift;
+                shift+=5;
+            }while(b>=0x20);
+            int dlat = ((result&1)!=0?~(result>>1):(result>>1));
+            lat+=dlat;
+            shift=0;
+            result=0;
+            do{
+                b=encoded.charAt(index++)-63;
+                result |= (b &0x1f)<<shift;
+                shift+=5;
+            }while(b>=0x20);
+            int dlng = ((result&1)!=0?~(result>>1):(result>>1));
+            lng+=dlng;
+            LatLng p = new LatLng((((double) lat / 1E5)),(((double) lng / 1E5)));
+            poly.add(p);
+        }
+        return poly;
+    }
 
 
+    private void drawAll() {
+        if (mMap != null) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mMap.clear();
+                    mMap.addMarker(new MarkerOptions().position(currentLocation).title("I'm here...").snippet("now"));
+                    for (int i = 0; i < markerArrayList.size(); i++) {
+                        markerArrayList.get(i).title(i + "");
+                        mMap.addMarker(markerArrayList.get(i));
+                    }
+                    lineOptions = new PolylineOptions();
+                    lineOptions.add(currentLocation); // 加入所有座標點到多邊形
+                    lineOptions.addAll(points); // 加入所有座標點到多邊形
+                    lineOptions.width(10);
+                    lineOptions.color(Color.RED);
+                    if (lineOptions != null) {
+                        if (polyline != null) {
+                            polyline.remove();
+                        }
+                        polyline = mMap.addPolyline(lineOptions);
+                    } else {
+                        Log.d("onPostExecute", "draw line error!");
+                    }
+                    if (busDataArrayList != null) {
+                        for (int i = 0; i < busDataArrayList.size(); i++) {
+                            mMap.addMarker(new MarkerOptions()
+                                    .title(busDataArrayList.get(i).getName())
+                                    .snippet("bus")
+                                    .position(busDataArrayList.get(i).getLatLng())
+                                    .icon(BitmapDescriptorFactory.fromBitmap(bmpArray.get(i))));
+                        }
+                    }
+                    if (dirPolyline.length() > 0) {
+                        drawPath(decodePoly(dirPolyline));
+                    }
+                }
+            });
+
+        }
+    }
 }

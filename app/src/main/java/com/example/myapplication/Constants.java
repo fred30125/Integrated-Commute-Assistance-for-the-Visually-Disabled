@@ -35,5 +35,6 @@ public interface Constants {
 
    // public static final String API_KEY = "AIzaSyAJ_DFfOwB2ahyY0a0P4ezEg6Ix-89dEg4";
     public static final String BUS_URL = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?";
+    public static final String DIRECTION_URL = "http://maps.google.com/maps/api/directions/json?";
 
 }

@@ -18,16 +18,32 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             tools:context=".MapsActivity" />
+
     </com.example.myapplication.MapWrapperLayout>
 
 
-    <Button
-        android:id="@+id/setMarker"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_margin="10dp"
         android:layout_weight="1"
-        android:text="setMarker:OFF" />
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/setMarker"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="10dp"
+            android:layout_weight="1"
+            android:text="setMarker:OFF" />
+
+        <Button
+            android:id="@+id/getRouter"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="10dp"
+            android:layout_weight="1"
+            android:text="矯正路線" />
+    </LinearLayout>
 
     <FrameLayout
         android:id="@+id/sample_content_fragment"

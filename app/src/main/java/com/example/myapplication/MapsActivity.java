@@ -26,6 +26,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
+import android.text.Html;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -113,8 +114,6 @@ public class MapsActivity extends FragmentActivity
     private SensorListener listener = new SensorListener();
     private float lastRotateDegree;
     private long lastUpdatetime;
-
-
     //--------------info window test--------------
     private Button infoButton1, infoButton2,infoButton3;
     private TextView routerID;
@@ -125,6 +124,7 @@ public class MapsActivity extends FragmentActivity
         currentLocation=null;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        dirPolyline=new String();
         points= new ArrayList<>(); // 所有點集合
         markerArrayList=new ArrayList<>();
         lineOptions = new PolylineOptions(); // 多邊形
@@ -168,25 +168,14 @@ public class MapsActivity extends FragmentActivity
         markerTotal=0;
         moveTimes=false;
         //--------指南針--------------------
-       // manager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-
-
         manager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
         Sensor magnetic = null;
         if (manager != null) {
             magnetic = manager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         }
-       /* Sensor acceleromter = null;
-        if (manager != null) {
-            acceleromter = manager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        }*/
         if (manager != null) {
             manager.registerListener(listener, magnetic, SensorManager.SENSOR_DELAY_GAME);
         }
-       /* if (manager != null) {
-            manager.registerListener(listener, acceleromter, SensorManager.SENSOR_DELAY_GAME);
-        }*/
-
         //--------info window設定------------
         mapWrapperLayout = (MapWrapperLayout)findViewById(R.id.map_relative_layout);
         this.infoWindow = (ViewGroup)getLayoutInflater().inflate(R.layout.custom_infowindow, null);
@@ -214,7 +203,6 @@ public class MapsActivity extends FragmentActivity
                     tmp= markerArrayList.get(ID).getPosition();
                     markerArrayList.get(ID).position(markerArrayList.get(ID-1).getPosition());
                     markerArrayList.get(ID-1).position(tmp);
-                    //----------------draw------------------------------------
                     drawAll();
                 }
             }
@@ -225,8 +213,6 @@ public class MapsActivity extends FragmentActivity
             @Override
             protected void onClickConfirmed(View v, Marker marker) {
                 Toast.makeText(MapsActivity.this, routerID.getText(), Toast.LENGTH_SHORT).show();
-                // Here we can perform some action triggered after clicking the button
-                //Toast.makeText(MapsActivity.this, "click on button 1", Toast.LENGTH_SHORT).show();
                 if(routerID.getText().equals(markerArrayList.size()-1+"")){
                     Toast.makeText(MapsActivity.this, "沒辦法往後", Toast.LENGTH_SHORT).show();
                 }else if(markerTotal<2){
@@ -252,7 +238,9 @@ public class MapsActivity extends FragmentActivity
         infoButtonListener = new OnInfoWindowElemTouchListener(infoButton3, getResources().getDrawable(R.drawable.btn_bg),getResources().getDrawable(R.drawable.btn_bg)){
             @Override
             protected void onClickConfirmed(View v, Marker marker) {
-                Toast.makeText(MapsActivity.this, "Hello Test", Toast.LENGTH_SHORT).show();
+                MyLatLng tmpA=new MyLatLng(marker.getPosition().longitude,marker.getPosition().latitude);
+                MyLatLng tmpB=new MyLatLng(currentLocation.longitude,currentLocation.latitude);
+                Toast.makeText(MapsActivity.this, getAngle(tmpB,tmpA)+"", Toast.LENGTH_SHORT).show();
 
 
             }
@@ -434,9 +422,6 @@ public class MapsActivity extends FragmentActivity
             moveTimes=true;
             requestBusStation();
         }
-
-
-
         //float results[]=new float[1];
         //現在緯度,現在經度,目標緯度,目標經度,
         //Location.distanceBetween(latLng.latitude, latLng.longitude, tmp.latitude, tmp.longitude, results);
@@ -578,7 +563,6 @@ public class MapsActivity extends FragmentActivity
             float[] values = new float[3];
             SensorManager.getRotationMatrix(R, null, acceleromterValues, magneticValues);
             SensorManager.getOrientation(R, values);
-            //float roteteDegree = -(float) Math.toDegrees(values[0]);
             float roteteDegree = (float) Math.round(event.values[0]);
             Log.i("12345",roteteDegree+"");
             if (roteteDegree < 0) roteteDegree = 360 + roteteDegree;
@@ -588,14 +572,6 @@ public class MapsActivity extends FragmentActivity
             Log.i("1234",roteteDegree+"");
             updateCamera(roteteDegree);
             lastRotateDegree=roteteDegree;
-         /*   float degree = event.values[0];// 存放了方向值 90
-            RotateAnimation animation = new RotateAnimation(predegree, -degree,
-                    Animation.RELATIVE_TO_SELF, 0.5f,
-                    Animation.RELATIVE_TO_SELF, 0.5f);
-            animation.setDuration(200);
-
-            imageView.startAnimation(animation);
-            predegree = -degree;*/
         }
 
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
@@ -664,6 +640,18 @@ public class MapsActivity extends FragmentActivity
                     Log.i("direction test -1",jsonObject.toString());
                     JSONArray routeObject = jsonObject.getJSONArray("routes");
                     Log.i("direction test -2",routeObject.toString());
+
+                    JSONArray insObject = routeObject.getJSONObject(0).getJSONArray("legs");
+                    Log.i("html測試",insObject.length()+"");
+                    for(int i=0;i<insObject.length();i++){
+                        JSONArray insArray;
+                        insArray=insObject.getJSONObject(i).getJSONArray("steps");
+                        for(int j=0;j<insArray.length();j++){
+                            String html_ins=new String();
+                            html_ins=insArray.getJSONObject(j).getString("html_instructions");
+                            Log.i("html測試", Html.fromHtml(html_ins).toString());
+                        }
+                    }
                     dirPolyline=new String();
                     dirPolyline= routeObject.getJSONObject(0).getJSONObject("overview_polyline").getString("points");
                     drawAll();
@@ -751,4 +739,63 @@ public class MapsActivity extends FragmentActivity
 
         }
     }
+
+
+
+    public static MyLatLng getMyLatLng(MyLatLng A,double distance,double angle){
+
+        double dx = distance*1000*Math.sin(Math.toRadians(angle));
+        double dy= distance*1000*Math.cos(Math.toRadians(angle));
+
+        double bjd=(dx/A.Ed+A.m_RadLo)*180./Math.PI;
+        double bwd=(dy/A.Ec+A.m_RadLa)*180./Math.PI;
+        return new MyLatLng(bjd, bwd);
+    }
+
+    public  static double getAngle(MyLatLng A,MyLatLng B){
+        double dx=(B.m_RadLo-A.m_RadLo)*A.Ed;
+        double dy=(B.m_RadLa-A.m_RadLa)*A.Ec;
+        double angle=0.0;
+        angle=Math.atan(Math.abs(dx/dy))*180./Math.PI;
+        double dLo=B.m_Longitude-A.m_Longitude;
+        double dLa=B.m_Latitude-A.m_Latitude;
+        if(dLo>0&&dLa<=0){
+            angle=(90.-angle)+90;
+        }
+        else if(dLo<=0&&dLa<0){
+            angle=angle+180.;
+        }else if(dLo<0&&dLa>=0){
+            angle= (90.-angle)+270;
+        }
+        return angle;
+    }
+    static class MyLatLng {
+        final static double Rc=6378137;
+        final static double Rj=6356725;
+        double m_LoDeg,m_LoMin,m_LoSec;
+        double m_LaDeg,m_LaMin,m_LaSec;
+        double m_Longitude,m_Latitude;
+        double m_RadLo,m_RadLa;
+        double Ec;
+        double Ed;
+        public MyLatLng(double longitude,double latitude){
+            m_LoDeg=(int)longitude;
+            m_LoMin=(int)((longitude-m_LoDeg)*60);
+            m_LoSec=(longitude-m_LoDeg-m_LoMin/60.)*3600;
+
+            m_LaDeg=(int)latitude;
+            m_LaMin=(int)((latitude-m_LaDeg)*60);
+            m_LaSec=(latitude-m_LaDeg-m_LaMin/60.)*3600;
+
+            m_Longitude=longitude;
+            m_Latitude=latitude;
+            m_RadLo=longitude*Math.PI/180.;
+            m_RadLa=latitude*Math.PI/180.;
+            Ec=Rj+(Rc-Rj)*(90.-m_Latitude)/90.;
+            Ed=Ec*Math.cos(m_RadLa);
+        }
+    }
+
+
+
 }

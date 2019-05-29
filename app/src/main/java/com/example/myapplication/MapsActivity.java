@@ -12,6 +12,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.hardware.Sensor;
+
+
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorListener;
@@ -96,12 +98,17 @@ public class MapsActivity extends FragmentActivity
     private Marker currentMarker;
     // 畫線
     ArrayList<LatLng> points;
+    ArrayList<Integer> points_state;//0=false 1=true
+    ArrayList<ArrayList<LatLng>> arrayPoints;
+    ArrayList<ArrayList<ArrayList<LatLng>>> arraySteps;
+
     PolylineOptions lineOptions;
     Polyline polyline;
     String dirPolyline;
     private BluetoothChatFragment bluetoothChatFragment;
     Boolean setMarkerStatus=false;
     int markerTotal;
+
     ArrayList<MarkerOptions> markerArrayList;
     boolean moveTimes;
     ArrayList<busData> busDataArrayList;
@@ -119,15 +126,23 @@ public class MapsActivity extends FragmentActivity
     private TextView routerID;
     private OnInfoWindowElemTouchListener infoButtonListener;
     private ViewGroup infoWindow;
+    //------------direction---------------
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         currentLocation=null;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
         dirPolyline=new String();
         points= new ArrayList<>(); // 所有點集合
+        points_state=new ArrayList<>();
         markerArrayList=new ArrayList<>();
         lineOptions = new PolylineOptions(); // 多邊形
+        arrayPoints = new ArrayList<>();
+        arraySteps=new ArrayList<>();
+
+
         bluetoothChatFragment=new BluetoothChatFragment();
         ActivityCompat.requestPermissions(MapsActivity.this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION},123);
 
@@ -164,10 +179,10 @@ public class MapsActivity extends FragmentActivity
                 }
             }
         });
-        points= new ArrayList<>();
         markerTotal=0;
         moveTimes=false;
         //--------指南針--------------------
+        lastRotateDegree=0;
         manager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
         Sensor magnetic = null;
         if (manager != null) {
@@ -203,7 +218,7 @@ public class MapsActivity extends FragmentActivity
                     tmp= markerArrayList.get(ID).getPosition();
                     markerArrayList.get(ID).position(markerArrayList.get(ID-1).getPosition());
                     markerArrayList.get(ID-1).position(tmp);
-                    drawAll();
+                    getDirection(currentLocation,points.get(points.size()-1));
                 }
             }
         };
@@ -228,9 +243,9 @@ public class MapsActivity extends FragmentActivity
                     markerArrayList.get(ID).position(markerArrayList.get(ID+1).getPosition());
                     markerArrayList.get(ID+1).position(tmp);
 //-----------------draw
-                    drawAll();
+                    getDirection(currentLocation,points.get(points.size()-1));
                 }
-            }
+        }
         };
         infoButton2.setOnTouchListener(infoButtonListener);
 
@@ -238,10 +253,14 @@ public class MapsActivity extends FragmentActivity
         infoButtonListener = new OnInfoWindowElemTouchListener(infoButton3, getResources().getDrawable(R.drawable.btn_bg),getResources().getDrawable(R.drawable.btn_bg)){
             @Override
             protected void onClickConfirmed(View v, Marker marker) {
-                MyLatLng tmpA=new MyLatLng(marker.getPosition().longitude,marker.getPosition().latitude);
-                MyLatLng tmpB=new MyLatLng(currentLocation.longitude,currentLocation.latitude);
-                Toast.makeText(MapsActivity.this, getAngle(tmpB,tmpA)+"", Toast.LENGTH_SHORT).show();
-
+                int ID=Integer.parseInt(routerID.getText().toString());
+                if(points_state.get(ID)==0){
+                    points_state.set(ID,1);
+                    getDirection(currentLocation,points.get(points.size()-1));
+                }else{
+                    points_state.set(ID,0);
+                    drawAll();
+                }
 
             }
         };
@@ -284,10 +303,12 @@ public class MapsActivity extends FragmentActivity
                     Toast.makeText(MapsActivity.this, latLng.latitude + "," + latLng.longitude, Toast.LENGTH_LONG).show();
                     if(setMarkerStatus) {
                         points.add(latLng);
+                        points_state.add(1);
+
                         lineOptions = new PolylineOptions();
                         lineOptions.add(currentLocation); // 加入所有座標點到多邊形
                         lineOptions.addAll(points); // 加入所有座標點到多邊形
-                        lineOptions.width(10);
+                        lineOptions.width(1);
                         lineOptions.color(Color.RED);
                         if (lineOptions != null) {
                             if (polyline != null) {
@@ -307,6 +328,7 @@ public class MapsActivity extends FragmentActivity
                         } else {
                             Log.d("onPostExecute", "draw line error!");
                         }
+                        getDirection(currentLocation,points.get(points.size()-1));
                     }
                 }
             }
@@ -325,7 +347,7 @@ public class MapsActivity extends FragmentActivity
                 lineOptions = new PolylineOptions();
                 lineOptions.add(currentLocation); // 加入所有座標點到多邊形
                 lineOptions.addAll(points); // 加入所有座標點到多邊形
-                lineOptions.width(10);
+                lineOptions.width(1);
                 lineOptions.color(Color.RED);
                 if (lineOptions != null) {
                     if (polyline != null) {
@@ -335,6 +357,12 @@ public class MapsActivity extends FragmentActivity
                 } else {
                     Log.d("onPostExecute", "draw line error!");
                 }
+                if(points_state.get(Integer.parseInt(marker.getTitle()))==0){
+                    drawAll();
+                }else{
+                    getDirection(currentLocation,points.get(points.size()-1));
+                }
+
             }
         });
 
@@ -422,6 +450,13 @@ public class MapsActivity extends FragmentActivity
             moveTimes=true;
             requestBusStation();
         }
+
+
+        if(points.size()>0){
+            MyLatLng tmp = new MyLatLng(points.get(0).longitude,points.get(0).latitude);
+            MyLatLng current = new MyLatLng(currentLocation.longitude,currentLocation.latitude);
+            Toast.makeText(this,turnTo(current,tmp),Toast.LENGTH_SHORT).show();
+        }
         //float results[]=new float[1];
         //現在緯度,現在經度,目標緯度,目標經度,
         //Location.distanceBetween(latLng.latitude, latLng.longitude, tmp.latitude, tmp.longitude, results);
@@ -433,7 +468,6 @@ public class MapsActivity extends FragmentActivity
     }
     @Override
     protected void onResume() {
-
         if (mMap == null) { //取得地圖
             ((SupportMapFragment) getSupportFragmentManager().
                     findFragmentById(R.id.map)).getMapAsync(this);
@@ -549,8 +583,6 @@ public class MapsActivity extends FragmentActivity
         return (int)(dp * scale + 0.5f);
     }
     private  class SensorListener implements SensorEventListener {
-        private float predegree = 0;
-
         public void onSensorChanged(SensorEvent event) {
             float[] magneticValues = new float[3];
             float[] acceleromterValues = new float[3];
@@ -586,18 +618,13 @@ public class MapsActivity extends FragmentActivity
             mMap.moveCamera(CameraUpdateFactory.newCameraPosition(pos));
         }
     }
-
     private String getDirectionsUrl(LatLng origin,LatLng dest){
-
         // Origin of route
         String str_origin = "origin="+origin.latitude+","+origin.longitude;
-
         // Destination of route
         String str_dest = "destination="+dest.latitude+","+dest.longitude;
-
         // Sensor enabled
         String sensor = "sensor=false";
-
         // Waypoints
         String waypoints = "";
         for(int i=0;i<points.size()-1;i++){
@@ -606,16 +633,12 @@ public class MapsActivity extends FragmentActivity
                 waypoints = "waypoints=";
             waypoints += point.latitude + "," + point.longitude + "|";
         }
-
         // Building the parameters to the web service
         String parameters = str_origin+"&"+str_dest+"&"+sensor+"&"+waypoints;
-
         // Output format
         String output = "json";
-
         // Building the url to the web service
         String url = "https://maps.googleapis.com/maps/api/directions/"+output+"?"+parameters+"&language=zh-TW&sensor=true&mode=walking&key="+google_maps_key;
-
         return url;
     }
     private void getDirection(LatLng origin,LatLng dest){
@@ -643,17 +666,33 @@ public class MapsActivity extends FragmentActivity
 
                     JSONArray insObject = routeObject.getJSONObject(0).getJSONArray("legs");
                     Log.i("html測試",insObject.length()+"");
+                    arraySteps=new ArrayList<>();
                     for(int i=0;i<insObject.length();i++){
                         JSONArray insArray;
                         insArray=insObject.getJSONObject(i).getJSONArray("steps");
+                        arrayPoints=new ArrayList<>();
                         for(int j=0;j<insArray.length();j++){
                             String html_ins=new String();
                             html_ins=insArray.getJSONObject(j).getString("html_instructions");
                             Log.i("html測試", Html.fromHtml(html_ins).toString());
+                            JSONObject tmp;
+                            tmp=insArray.getJSONObject(j);
+                            Log.i("html測試123",tmp.getJSONObject("polyline").getString("points"));
+                            arrayPoints.add(decodePoly(tmp.getJSONObject("polyline").getString("points")));
                         }
+                        arraySteps.add(arrayPoints);
                     }
-                    dirPolyline=new String();
-                    dirPolyline= routeObject.getJSONObject(0).getJSONObject("overview_polyline").getString("points");
+                    for(int i=0;i<arraySteps.size();i++){
+                        Log.i("arraytest",i+"");
+                        for(int j=0;j<arraySteps.get(i).size();j++){
+                            Log.i("arraytest",arraySteps.get(i).get(j)+"");
+                        }
+
+                    }
+
+
+                   /* dirPolyline=new String();
+                    dirPolyline= routeObject.getJSONObject(0).getJSONObject("overview_polyline").getString("points");*/
                     drawAll();
 
                 } catch (JSONException e) {
@@ -712,7 +751,7 @@ public class MapsActivity extends FragmentActivity
                     lineOptions = new PolylineOptions();
                     lineOptions.add(currentLocation); // 加入所有座標點到多邊形
                     lineOptions.addAll(points); // 加入所有座標點到多邊形
-                    lineOptions.width(10);
+                    lineOptions.width(1);
                     lineOptions.color(Color.RED);
                     if (lineOptions != null) {
                         if (polyline != null) {
@@ -731,9 +770,35 @@ public class MapsActivity extends FragmentActivity
                                     .icon(BitmapDescriptorFactory.fromBitmap(bmpArray.get(i))));
                         }
                     }
-                    if (dirPolyline.length() > 0) {
+                    /*if (dirPolyline.length() > 0) {
                         drawPath(decodePoly(dirPolyline));
+                        Log.i("dirpoly",decodePoly(dirPolyline)+"");
+                    }*/
+                    if(arraySteps!=null){
+                        for(int i=0;i<arraySteps.size();i++){
+                            Log.i("arraytest",i+"");
+                            if(points_state.get(i)==1){
+                                for(int j=0;j<arraySteps.get(i).size();j++){
+                                    Log.i("arraytest",arraySteps.get(i).get(j)+"");
+                                    drawPath(arraySteps.get(i).get(j));
+                                }
+                            }else{
+                                if(i==0){
+                                    ArrayList<LatLng>tmp=new ArrayList<>();
+                                    tmp.add(currentLocation);
+                                    tmp.add(points.get(i));
+                                    drawPath(tmp);
+                                }else{
+                                    ArrayList<LatLng>tmp=new ArrayList<>();
+                                    tmp.add(points.get(i-1));
+                                    tmp.add(points.get(i));
+                                    drawPath(tmp);
+                                }
+                            }
+
+                        }
                     }
+
                 }
             });
 
@@ -743,7 +808,6 @@ public class MapsActivity extends FragmentActivity
 
 
     public static MyLatLng getMyLatLng(MyLatLng A,double distance,double angle){
-
         double dx = distance*1000*Math.sin(Math.toRadians(angle));
         double dy= distance*1000*Math.cos(Math.toRadians(angle));
 
@@ -794,6 +858,28 @@ public class MapsActivity extends FragmentActivity
             Ec=Rj+(Rc-Rj)*(90.-m_Latitude)/90.;
             Ed=Ec*Math.cos(m_RadLa);
         }
+    }
+
+    public String turnTo(MyLatLng A,MyLatLng B){
+        double turnDrgree=lastRotateDegree-getAngle(A,B);
+        if(turnDrgree<15&&turnDrgree>-15){
+            return "STRAIGHT";
+        }else if(turnDrgree>=15&&turnDrgree<=60){
+            return "DEV_LEFT";
+        }else if(turnDrgree>60&&turnDrgree<110){
+            return "LEFT";
+        }else if(turnDrgree>=110&&turnDrgree<=150){
+            return "BACK_LEFT";
+        }else if(turnDrgree<=-15&&turnDrgree>=-60){
+            return "DEV_RIGHT";
+        }else if(turnDrgree<-60&&turnDrgree>-110){
+            return "RIGHT";
+        }else if(turnDrgree<=-110&&turnDrgree>=-150){
+            return "BACK_RIGHT";
+        }else if(turnDrgree>150||turnDrgree<-150){
+            return "BACK";
+        }
+        return null;
     }
 
 

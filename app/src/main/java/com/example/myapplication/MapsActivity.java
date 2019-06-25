@@ -127,7 +127,7 @@ public class MapsActivity extends FragmentActivity
     private OnInfoWindowElemTouchListener infoButtonListener;
     private ViewGroup infoWindow;
     //------------direction---------------
-
+    int []nowPoint;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         currentLocation=null;
@@ -162,8 +162,11 @@ public class MapsActivity extends FragmentActivity
         btnRouter.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!points.isEmpty()){
-                    getDirection(currentLocation,points.get(points.size()-1));
+                if(points!=null){
+                    nowPoint=new int[3];
+                    nowPoint[0]=0;
+                    nowPoint[1]=0;
+                    nowPoint[2]=0;
                 }
             }
         });
@@ -455,16 +458,11 @@ public class MapsActivity extends FragmentActivity
         if(points.size()>0){
             MyLatLng tmp = new MyLatLng(points.get(0).longitude,points.get(0).latitude);
             MyLatLng current = new MyLatLng(currentLocation.longitude,currentLocation.latitude);
+            getDistance(currentLocation,points.get(0));
             Toast.makeText(this,turnTo(current,tmp),Toast.LENGTH_SHORT).show();
         }
-        //float results[]=new float[1];
-        //現在緯度,現在經度,目標緯度,目標經度,
-        //Location.distanceBetween(latLng.latitude, latLng.longitude, tmp.latitude, tmp.longitude, results);
-        //String distance = NumberFormat.getInstance().format(results[0]);
-        /*if(results[0]<100){
-            bluetoothChatFragment.updateMessage("Q");
-        }*/
-        //Toast.makeText(this, "與現在距離"+distance+"公尺",Toast.LENGTH_LONG).show();
+        router_action();
+
     }
     @Override
     protected void onResume() {
@@ -770,10 +768,7 @@ public class MapsActivity extends FragmentActivity
                                     .icon(BitmapDescriptorFactory.fromBitmap(bmpArray.get(i))));
                         }
                     }
-                    /*if (dirPolyline.length() > 0) {
-                        drawPath(decodePoly(dirPolyline));
-                        Log.i("dirpoly",decodePoly(dirPolyline)+"");
-                    }*/
+
                     if(arraySteps!=null){
                         for(int i=0;i<arraySteps.size();i++){
                             Log.i("arraytest",i+"");
@@ -882,6 +877,44 @@ public class MapsActivity extends FragmentActivity
         return null;
     }
 
+    public float getDistance(LatLng point_one,LatLng point_two){
+        float[] results=new float[1];
+        Location.distanceBetween(point_one.latitude,point_one.longitude,point_two.latitude,point_two.longitude,results);
+        Log.i("距離",results[0]+"");
+        return results[0];
+    }
+    public void router_action(){
+        if(nowPoint!=null){
+            float distance=getDistance(currentLocation,arraySteps.get(nowPoint[0]).get(nowPoint[1]).get(nowPoint[2]));
+            if(distance<5){
+                if(arraySteps.get(nowPoint[0]).get(nowPoint[1]).size()==nowPoint[2]+1){
+                    nowPoint[2]=0;
+                    if(arraySteps.get(nowPoint[0]).size()==nowPoint[1]+1){
+                        if(points.size()==nowPoint[0]+1){
+                            Toast.makeText(MapsActivity.this,"結束導航", Toast.LENGTH_SHORT).show();
+                        }else {
+                            Toast.makeText(MapsActivity.this,"下個路徑點(大)", Toast.LENGTH_SHORT).show();
+                            nowPoint[0]++;
+                        }
+
+                    }else{
+                        Toast.makeText(MapsActivity.this,"下個路徑點(小)", Toast.LENGTH_SHORT).show();
+                        nowPoint[1]++;
+                    }
+                }else {
+                    Toast.makeText(MapsActivity.this,"下個點", Toast.LENGTH_SHORT).show();
+                    nowPoint[2]++;
+                }
+                Toast.makeText(MapsActivity.this,"點距"+distance, Toast.LENGTH_SHORT).show();
+            }else if(distance<10){
+                Toast.makeText(MapsActivity.this,"點距"+distance, Toast.LENGTH_SHORT).show();
+            }else if(distance<15){
+                Toast.makeText(MapsActivity.this,"點距"+distance, Toast.LENGTH_SHORT).show();
+            }else{
+                Toast.makeText(MapsActivity.this,"點距"+distance, Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
 
 
 }

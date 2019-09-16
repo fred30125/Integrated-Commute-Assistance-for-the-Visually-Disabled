@@ -24,4 +24,108 @@
     <string name="secure_connect">Connect a device - Secure</string>
     <string name="insecure_connect">Connect a device - Insecure</string>
     <string name="discoverable">Make discoverable</string>
+
+    <!--db file-->
+    <string name="hint_account">Account</string>
+    <string name="hint_password">Password</string>
+    <string name="hint_confirm">Confirm password</string>
+    <string name="btn_login">LOGIN</string>
+    <string name="btn_register">REGISTER</string>
+    <string name="btn_link_to_register">Not a member? Sign up now.</string>
+    <string name="btn_link_to_login">Already registred! Login Me.</string>
+    <string name="welcome">Welcome</string>
+    <string name="btn_logout">LOGOUT</string>
+    <string name="name">Fullname</string>
+    <string name="btn_find">FIND</string>
+    <string name="btn_search">SEARCH</string>
+    <string name="btn_upload">UPLOAD</string>
+    <string name="btn_user">User</string>
+    <string name="content_petimage">petimage</string>
+    <string name="text_pet">test</string>
+    <string name="list_sex">sex</string>
+    <string name="list_image">image</string>
+    <string name="list_age">age</string>
+    <string name="list_id">id</string>
+    <string name="title_kind">種類</string>
+    <string name="title_color">顏色</string>
+    <string name="title_age">年紀</string>
+    <string name="title_size">體型</string>
+    <string name="title_place">所在地</string>
+    <string name="title_sex">性別</string>
+    <string name="title_ID">ID</string>
+    <string name="title_shelter">收容所</string>
+    <string name="title_phone">電話</string>
+    <string name="title_user">使用者</string>
+    <string name="btn_select">搜尋</string>
+    <string name="btn_load">上傳</string>
+    <string name="btn_change">更改</string>
+    <string name="title_vac">疫苗</string>
+    <string name="title_ster">絕育</string>
+    <string name="title_name">名稱</string>
+    <string name="title_sub">補助項目</string>
+    <string name="hint_color">請輸入顏色</string>
+
+    <string name="btn_pic">選擇圖片</string>
+    <string-array name="TFItem">
+        <item>T</item>
+        <item>F</item>
+        <item>N</item>
+    </string-array>
+
+    <string-array name="kindItem">
+        <item>狗</item>
+        <item>貓</item>
+    </string-array>
+    <string-array name="colorItem">
+        <item>黑</item>
+        <item>白</item>
+        <item>米</item>
+        <item>黃</item>
+        <item>棕</item>
+        <item>咖啡</item>
+        <item>橘</item>
+        <item>虎斑</item>
+        <item>三花</item>
+    </string-array>
+
+    <string-array name="ageItem">
+        <item>幼年</item>
+        <item>成年</item>
+    </string-array>
+    <string-array name="sexItem">
+        <item>公</item>
+        <item>母</item>
+    </string-array>
+    <string-array name="sizeItem">
+        <item>小型</item>
+        <item>中型</item>
+        <item>大型</item>
+    </string-array>
+    <string-array name="placeItem">
+        <item>臺北市</item>
+        <item>新北市</item>
+        <item>桃園市</item>
+        <item>新竹市</item>
+        <item>臺中市</item>
+        <item>彰化市</item>
+        <item>南投市</item>
+        <item>嘉義市</item>
+        <item>嘉義縣</item>
+        <item>臺南市</item>
+        <item>高雄市</item>
+        <item>屏東市</item>
+        <item>宜蘭市</item>
+        <item>花蓮縣</item>
+        <item>臺東縣</item>
+        <item>連江縣</item>
+        <item>金門縣</item>
+        <item>澎湖縣</item>
+        <item>雲林縣</item>
+        <item>苗栗縣</item>
+    </string-array>
+
+    <!-- Facebook~~ -->
+    <string name="facebook_app_id">[APP_ID]</string>
+    <string name="fb_login_protocol_scheme">fb469288397135484</string>
+
 </resources>

@@ -5,6 +5,8 @@ import android.app.VoiceInteractor;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -21,6 +23,16 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.SignInButton;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.tasks.Task;
 
 
 import org.json.JSONException;
@@ -29,53 +41,45 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 
-public class LoginActivity extends Activity  {
-
+public class LoginActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks ,GoogleApiClient.OnConnectionFailedListener {
+    SignInButton signInButton;
+    GoogleSignInClient mGoogleSignInClient;
+    int RC_SIGN_IN = 0;
 
     private Button btnLogin;
-
     private Button btnLinkToRigister;
     private EditText inputAccount;
     private EditText inputPassword;
     private RequestQueue requestQueue;
     private final  static String URL="http://163.25.101.33:80/loginapp/user_control.php";
     private StringRequest request;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-       /* AppEventsLogger.activateApp(this);
-        //init facebook
-        FacebookSdk.sdkInitialize(getApplicationContext());
-        // init LoginManager & CallbackManager
-        loginManager = LoginManager.getInstance();
-        callbackManager = CallbackManager.Factory.create();*/
-/*
-        LoginManager.getInstance().registerCallback(callbackManager,
-                new FacebookCallback<LoginResult>() {
-                    @Override
-                    public void onSuccess(LoginResult loginResult) {
-                        // App code
-                    }
+        //google login
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .build();
 
-                    @Override
-                    public void onCancel() {
-                        // App code
-                    }
+        // Build a GoogleSignInClient with the options specified by gso.
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
 
-                    @Override
-                    public void onError(FacebookException exception) {
-                        // App code
-                    }
-        });
+        /*googleApiClient
+                = new GoogleApiClient.Builder(fragment.getContext())
+                .enableAutoManage(getActivity(), this)
+                .addApi(Auth.GOOGLE_SIGN_IN_API
+                        , googleSignInOptions)
+                .build();*/
 
-*/
+        //google login
 
 
 
 
-
+        signInButton=findViewById(R.id.sign_in_google_button);
         btnLogin=(Button)findViewById(R.id.btnLogin);
         btnLinkToRigister=(Button)findViewById(R.id.btnLinkToRegisterScreen);
         inputAccount=(EditText)findViewById(R.id.account);
@@ -83,37 +87,12 @@ public class LoginActivity extends Activity  {
         requestQueue= Volley.newRequestQueue(this);
 
 
-/*
-
-        loginButton = (LoginButton) findViewById(R.id.login_button);
-        loginButton.setReadPermissions("email");
-        // If using in a fragment
-        //loginButton.setFragment(this);
-
-        // Callback registration
-        /*loginButton.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
-            @Override
-            public void onSuccess(LoginResult loginResult) {
-                // App code
-            }
-
-            @Override
-            public void onCancel() {
-                // App code
-            }
-
-            @Override
-            public void onError(FacebookException exception) {
-                // App code
-            }
-        });*//*
-        loginButton.setOnClickListener(new View.OnClickListener() {
+        signInButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Facebook Login
-                loginFB();
+                signIn();
             }
-        });*/
+        });
 
 
 
@@ -179,8 +158,62 @@ public class LoginActivity extends Activity  {
     }
 
 
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
 
 
+    //google test
 
+    private void signIn() {
+        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+        startActivityForResult(signInIntent, RC_SIGN_IN);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        // Result returned from launching the Intent from GoogleSignInClient.getSignInIntent(...);
+        if (requestCode == RC_SIGN_IN) {
+            // The Task returned from this call is always completed, no need to attach
+            // a listener.
+            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+            handleSignInResult(task);
+        }
+    }
+    private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
+        try {
+            GoogleSignInAccount account = completedTask.getResult(ApiException.class);
+            // Signed in successfully, show authenticated UI.
+            startActivity(new Intent(LoginActivity.this, MenuActivity.class));
+        } catch (ApiException e) {
+            // The ApiException status code indicates the detailed failure reason.
+            // Please refer to the GoogleSignInStatusCodes class reference for more information.
+            Log.w("Google Sign In Error", "signInResult:failed code=" + e.getStatusCode());
+            Toast.makeText(LoginActivity.this, "Failed", Toast.LENGTH_LONG).show();
+        }
+    }
+    @Override
+    protected void onStart() {
+        // Check for existing Google Sign In account, if the user is already signed in
+        // the GoogleSignInAccount will be non-null.
+        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
+        if(account != null) {
+            startActivity(new Intent(LoginActivity.this, MenuActivity.class));
+        }
+        super.onStart();
+    }
 }
 

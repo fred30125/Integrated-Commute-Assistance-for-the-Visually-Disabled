@@ -61,10 +61,14 @@
     <string name="btn_change">更改</string>
     <string name="title_vac">疫苗</string>
     <string name="title_ster">絕育</string>
-    <string name="title_name">名稱</string>
+
     <string name="title_sub">補助項目</string>
     <string name="hint_color">請輸入顏色</string>
-
+    <!--   用到的-->
+    <string name="title_name">名稱</string>
+    <string name="title_mail">信箱</string>
+    <string name="title_id">id</string>
+    <!--   用到的-->
     <string name="btn_pic">選擇圖片</string>
     <string-array name="TFItem">
         <item>T</item>
@@ -72,57 +76,7 @@
         <item>N</item>
     </string-array>
 
-    <string-array name="kindItem">
-        <item>狗</item>
-        <item>貓</item>
-    </string-array>
-    <string-array name="colorItem">
-        <item>黑</item>
-        <item>白</item>
-        <item>米</item>
-        <item>黃</item>
-        <item>棕</item>
-        <item>咖啡</item>
-        <item>橘</item>
-        <item>虎斑</item>
-        <item>三花</item>
-    </string-array>
 
-    <string-array name="ageItem">
-        <item>幼年</item>
-        <item>成年</item>
-    </string-array>
-    <string-array name="sexItem">
-        <item>公</item>
-        <item>母</item>
-    </string-array>
-    <string-array name="sizeItem">
-        <item>小型</item>
-        <item>中型</item>
-        <item>大型</item>
-    </string-array>
-    <string-array name="placeItem">
-        <item>臺北市</item>
-        <item>新北市</item>
-        <item>桃園市</item>
-        <item>新竹市</item>
-        <item>臺中市</item>
-        <item>彰化市</item>
-        <item>南投市</item>
-        <item>嘉義市</item>
-        <item>嘉義縣</item>
-        <item>臺南市</item>
-        <item>高雄市</item>
-        <item>屏東市</item>
-        <item>宜蘭市</item>
-        <item>花蓮縣</item>
-        <item>臺東縣</item>
-        <item>連江縣</item>
-        <item>金門縣</item>
-        <item>澎湖縣</item>
-        <item>雲林縣</item>
-        <item>苗栗縣</item>
-    </string-array>
 
     <!-- Facebook~~ -->
     <string name="facebook_app_id">[APP_ID]</string>

@@ -20,6 +20,7 @@ import android.hardware.SensorListener;
 import android.hardware.SensorManager;
 import android.location.Location;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -45,8 +46,18 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.RequestQueue;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+import com.bumptech.glide.Glide;
 import com.example.myapplication.common.logger.LogWrapper;
 import com.example.myapplication.common.logger.MessageOnlyLogFilter;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -74,6 +85,8 @@ import java.text.MessageFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -88,7 +101,7 @@ public class MapsActivity extends FragmentActivity
 
     private GoogleMap mMap;
     private int test=0;
-    private Button setMarker,btnRouter;
+    private Button setMarker,btnRouter,btnUpload;
     private GoogleApiClient googleApiClient;
     // Location請求物件
     private LocationRequest locationRequest;
@@ -122,18 +135,55 @@ public class MapsActivity extends FragmentActivity
     private float lastRotateDegree;
     private long lastUpdatetime;
     //--------------info window test--------------
-    private Button infoButton1, infoButton2,infoButton3;
+    private Button infoButton1,infoButton2,infoButton3;
     private TextView routerID;
     private OnInfoWindowElemTouchListener infoButtonListener;
     private ViewGroup infoWindow;
     //------------direction---------------
     int []nowPoint;
+
+    //------------upload to server --> made by jsonobject--------------
+    JSONObject jsonObjectToServer;
+    private RequestQueue requestQueue;
+    private StringRequest request;
+
+    //------------google 會員資料-----------------
+    GoogleSignInClient mGoogleSignInClient;
+    String personName;
+    String personGivenName;
+    String personFamilyName;
+    String personEmail;
+    String personId;
+    private final  static String URL="http://163.25.101.33:80/loginapp/upload_router.php";
+
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         currentLocation=null;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        //-------------volley request-------------------------
+        requestQueue= Volley.newRequestQueue(this);
 
+
+        //-----------------google測試--------------------------
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .build();
+
+        // Build a GoogleSignInClient with the options specified by gso.
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(MapsActivity.this);
+        if (acct != null) {
+             personName = acct.getDisplayName();
+             personGivenName = acct.getGivenName();
+             personFamilyName = acct.getFamilyName();
+             personEmail = acct.getEmail();
+             personId = acct.getId();
+        }
+        //-----------------google測試 end--------------------------
         dirPolyline=new String();
         points= new ArrayList<>(); // 所有點集合
         points_state=new ArrayList<>();
@@ -159,6 +209,14 @@ public class MapsActivity extends FragmentActivity
         google_maps_key=getResources().getString(R.string.google_maps_key);
         setMarker=findViewById(R.id.setMarker);
         btnRouter=findViewById(R.id.getRouter);
+        btnUpload=findViewById(R.id.btnUpload);
+
+        btnUpload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                uploadToServer(arraySteps,personName);
+            }
+        });
         btnRouter.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -175,10 +233,10 @@ public class MapsActivity extends FragmentActivity
             public void onClick(View v) {
                 if(setMarkerStatus==false){
                     setMarkerStatus=true;
-                    setMarker.setText("setMarker:ON");
+                    setMarker.setText("set:ON");
                 }else{
                     setMarkerStatus=false;
-                    setMarker.setText("setMarker:OFF");
+                    setMarker.setText("set:OFF");
                 }
             }
         });
@@ -513,6 +571,7 @@ public class MapsActivity extends FragmentActivity
         busStationURL.append("&types=bus_station");
         busStationURL.append("&language=zh-TW");
         busStationURL.append("&key="+google_maps_key);
+        Log.i("bus url",busStationURL.toString());
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
                 .url(busStationURL.toString())
@@ -687,8 +746,7 @@ public class MapsActivity extends FragmentActivity
                         }
 
                     }
-
-
+                    Log.i("arraytest123",arraySteps.toString()+"");
                    /* dirPolyline=new String();
                     dirPolyline= routeObject.getJSONObject(0).getJSONObject("overview_polyline").getString("points");*/
                     drawAll();
@@ -915,6 +973,67 @@ public class MapsActivity extends FragmentActivity
             }
         }
     }
+    public void uploadToServer(ArrayList<ArrayList<ArrayList<LatLng>>> router,String ID){
+        jsonObjectToServer=new JSONObject();
+        try{
+            jsonObjectToServer.put("id",ID);
+        } catch (Exception e) {
+            Log.e("error on upload ID",e.toString());
+        }
+        try{
+            jsonObjectToServer.put("Router",router.toString());
+        } catch (Exception e) {
+            Log.e("error on upload Router",e.toString());
+        }
+        Log.i("check upload messenger",jsonObjectToServer.toString());
+
+
+        //--------------upload start---------------------------
+        request = new StringRequest(com.android.volley.Request.Method.POST, URL, new com.android.volley.Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
+                    JSONObject jsonObject=new JSONObject(response);
+                    if(jsonObject.names().get(0).equals("success")){
+                        Toast.makeText(getApplicationContext(),"SUCCESS!!"+jsonObject.getString("success"),Toast.LENGTH_SHORT).show();
+                        startActivity( new Intent(getApplicationContext(),LoginActivity.class));
+                        finish();
+                    }else{
+                        Toast.makeText(getApplicationContext(),"Error!!"+jsonObject.getString("error"),Toast.LENGTH_SHORT).show();
+                    }
+                } catch (JSONException e) {
+                    Log.e("error",e.toString());
+                    e.printStackTrace();
+                }
+            }
+        }, new com.android.volley.Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String, String> Map = new HashMap<String, String>();
+                Map.put("router", jsonObjectToServer.toString());
+                Map.put("ID",personName);
+                Map.put("router_name","testfile");
+                return Map;
+            }
+        };
+        requestQueue.add(request);
+    }
+
+
+
+
+
+
+
+
+
+
+
 
 
 }

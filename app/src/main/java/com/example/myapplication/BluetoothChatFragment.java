@@ -49,7 +49,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 /**
  * This fragment controls Bluetooth to communicate with other devices.
  */
-public class BluetoothChatFragment extends Fragment {
+public class                                                                                                                                             BluetoothChatFragment extends Fragment {
 
     public  interface OnMyListener{
          void onInputSent(CharSequence input);

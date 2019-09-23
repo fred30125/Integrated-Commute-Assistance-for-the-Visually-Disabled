@@ -245,4 +245,15 @@ public class MapFragment extends Fragment  implements OnMapReadyCallback, Google
             googleApiClient.disconnect();
         }
     }
+
+
+
+
+
+
+
+
+
+
+
 }

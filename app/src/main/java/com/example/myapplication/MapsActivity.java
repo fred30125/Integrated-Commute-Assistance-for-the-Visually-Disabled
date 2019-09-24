@@ -42,6 +42,7 @@ import android.view.animation.RotateAnimation;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -54,11 +55,13 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.bigkoo.pickerview.builder.OptionsPickerBuilder;
 import com.bigkoo.pickerview.builder.TimePickerBuilder;
+import com.bigkoo.pickerview.listener.CustomListener;
 import com.bigkoo.pickerview.listener.OnOptionsSelectListener;
 import com.bigkoo.pickerview.listener.OnTimeSelectListener;
 import com.bigkoo.pickerview.view.OptionsPickerView;
 import com.bigkoo.pickerview.view.TimePickerView;
 import com.bumptech.glide.Glide;
+import com.example.myapplication.bean.CardBean;
 import com.example.myapplication.bean.JsonBean;
 import com.example.myapplication.common.logger.LogWrapper;
 import com.example.myapplication.common.logger.MessageOnlyLogFilter;
@@ -112,7 +115,7 @@ public class MapsActivity extends FragmentActivity
 
     private GoogleMap mMap;
     private int test=0;
-    private Button setMarker,btnRouter,btnUpload;
+    private Button setMarker,btnRouter,btnUpload,btn_CustomOptions;
     private GoogleApiClient googleApiClient;
     // Location請求物件
     private LocationRequest locationRequest;
@@ -176,6 +179,8 @@ public class MapsActivity extends FragmentActivity
     private static final int MSG_LOAD_FAILED = 0x0003;
 
     private static boolean isLoaded = false;
+    private ArrayList<CardBean> cardItem = new ArrayList<>();
+    private OptionsPickerView pvCustomOptions;
 
 
 
@@ -230,6 +235,18 @@ public class MapsActivity extends FragmentActivity
         setMarker=findViewById(R.id.setMarker);
         btnRouter=findViewById(R.id.getRouter);
         btnUpload=findViewById(R.id.btnUpload);
+        btn_CustomOptions=findViewById(R.id.btn_CustomOptions);
+
+
+//-----------picker view
+        getCardData();
+        initCustomOptionPicker();
+        btn_CustomOptions.setOnClickListener(new View.OnClickListener() { //設定and選擇路線
+            @Override
+            public void onClick(View v) {
+                pvCustomOptions.show();
+            }
+        });
 
         btnUpload.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -260,6 +277,7 @@ public class MapsActivity extends FragmentActivity
                 }
             }
         });
+
         markerTotal=0;
         moveTimes=false;
         //--------指南針--------------------
@@ -1201,6 +1219,75 @@ public class MapsActivity extends FragmentActivity
         }
     }
 
+    //--------------set router picker view-----------
+    private void initCustomOptionPicker() {//条件选择器初始化，自定义布局
+        /**
+         * @description
+         *
+         * 注意事项：
+         * 自定义布局中，id为 optionspicker 或者 timepicker 的布局以及其子控件必须要有，否则会报空指针。
+         * 具体可参考demo 里面的两个自定义layout布局。
+         */
+        pvCustomOptions = new OptionsPickerBuilder(this, new OnOptionsSelectListener() {
+            @Override
+            public void onOptionsSelect(int options1, int option2, int options3, View v) {
+                //返回的分别是三个级别的选中位置
+                String tx = cardItem.get(options1).getPickerViewText();
+                btn_CustomOptions.setText(tx);
+            }
+        })
+                .setLayoutRes(R.layout.pickerview_custom_options, new CustomListener() {
+                    @Override
+                    public void customLayout(View v) {
+                        final TextView tvSubmit = (TextView) v.findViewById(R.id.tv_finish);
+                        final TextView tvAdd = (TextView) v.findViewById(R.id.tv_add);
+                        ImageView ivCancel = (ImageView) v.findViewById(R.id.iv_cancel);
+                        tvSubmit.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                pvCustomOptions.returnData();
+                                pvCustomOptions.dismiss();
+                            }
+                        });
+
+                        ivCancel.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                pvCustomOptions.dismiss();
+                            }
+                        });
+
+                        tvAdd.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                getCardData();
+                                pvCustomOptions.setPicker(cardItem);
+                            }
+                        });
+
+                    }
+                })
+                .isDialog(true)
+                .setOutSideCancelable(false)
+                .build();
+
+        pvCustomOptions.setPicker(cardItem);//添加数据
+
+
+    }
+
+    private void getCardData() {
+        for (int i = 0; i < 5; i++) {
+            cardItem.add(new CardBean(i, "No.ABC12345 " + i));
+        }
+
+        for (int i = 0; i < cardItem.size(); i++) {
+            if (cardItem.get(i).getCardNo().length() > 6) {
+                String str_item = cardItem.get(i).getCardNo().substring(0, 6) + "...";
+                cardItem.get(i).setCardNo(str_item);
+            }
+        }
+    }
 
 
 

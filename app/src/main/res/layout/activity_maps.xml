@@ -25,32 +25,51 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_weight="1"
+        android:layout_weight="0.95"
         android:orientation="horizontal">
 
         <Button
             android:id="@+id/setMarker"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_margin="10dp"
+            android:layout_marginBottom="5dp"
             android:layout_weight="1"
             android:text="set:OFF" />
+        <Button
+            android:id="@+id/btn_CustomOptions"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="5dp"
+            android:layout_weight="1"
+            android:layout_below="@+id/tvTime"
+            android:text="選擇路線" />
+
+
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="0.95"
+        android:orientation="horizontal">
+
+
 
         <Button
             android:id="@+id/getRouter"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_margin="10dp"
+            android:layout_marginBottom="5dp"
             android:layout_weight="1"
             android:text="開始導航" />
         <Button
             android:id="@+id/btnUpload"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_margin="10dp"
+            android:layout_marginBottom="5dp"
             android:layout_weight="1"
             android:text="上傳" />
     </LinearLayout>
+
 
     <FrameLayout
         android:id="@+id/sample_content_fragment"

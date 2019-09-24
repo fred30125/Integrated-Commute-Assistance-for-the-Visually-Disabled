@@ -6,12 +6,20 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -19,6 +27,12 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class MenuActivity extends Activity {
@@ -30,6 +44,11 @@ public class MenuActivity extends Activity {
     TextView textView_mail;
     TextView textView_id;
     ImageView photo;
+
+    //-------------login test----------------
+    private RequestQueue requestQueue;
+    private final  static String URL="http://163.25.101.33:80/loginapp/google_login.php";
+    private StringRequest request;
 
 
     @Override
@@ -43,6 +62,7 @@ public class MenuActivity extends Activity {
         textView_mail=findViewById(R.id.textView_mail);
         textView_id=findViewById(R.id.textView_id);
         photo=findViewById(R.id.photo);
+        requestQueue= Volley.newRequestQueue(this);
 
         //-------------------------------GOOGLE LOGIN 資料測試-------------------------------
         // Configure sign-in to request the user's ID, email address, and basic
@@ -62,9 +82,12 @@ public class MenuActivity extends Activity {
             String personId = acct.getId();
             Uri personPhoto = acct.getPhotoUrl();
 
+            //loginCheck(personEmail,personId,personName);
+
             textView_name.setText(personName);
             textView_mail.setText(personEmail);
             textView_id.setText(personId);
+            loginCheck(personEmail,personId,personName);
             Glide.with(this).load(personPhoto).into(photo);
         }
         sign_out.setOnClickListener(new View.OnClickListener() {
@@ -108,6 +131,53 @@ public class MenuActivity extends Activity {
                         finish();
                     }
                 });
+    }
+
+    private void loginCheck(String personEmail,String personId,String personName){
+        Log.i("test login",personEmail+personId+personName);
+        final String email,id,name;
+        email=personEmail;
+        id=personId;
+        name=personName;
+        request=new StringRequest(Request.Method.POST, URL, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
+                    Log.i("tagconvertstr", "["+response+"]");
+                    JSONObject jsonObject=new JSONObject(response);
+
+                    if(jsonObject.names().get(0).equals("success")){
+                        Toast.makeText(MenuActivity.this,"SUCCESS!!"+jsonObject.getString("success"),Toast.LENGTH_SHORT).show();
+                    }else{
+                        Toast.makeText(MenuActivity.this,"SUCCESS!!"+jsonObject.getString("success"),Toast.LENGTH_SHORT).show();
+                    }
+                } catch (JSONException e) {
+                    Log.e("error",e.toString());
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("error2",error.toString());
+            }
+        }){
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String,String> Map=new HashMap<String,String>();
+                Map.put("account",email);
+                Map.put("password",id);
+                Map.put("user_name",name);
+                Log.i("test", "account:"+email+"&password:"+id+"       "+name);
+               // Log.i("test", "hashmap:"+Map.toString());
+                return Map;
+
+            }
+        };
+        Log.i("test", "request:"+requestQueue.toString());
+        requestQueue.add(request);
+
+
     }
 
 }

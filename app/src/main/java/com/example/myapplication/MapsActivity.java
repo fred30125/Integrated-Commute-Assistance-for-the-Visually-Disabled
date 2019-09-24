@@ -234,7 +234,7 @@ public class MapsActivity extends FragmentActivity
         btnUpload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                uploadToServer(arraySteps,personName);
+                uploadToServer(arraySteps,personName,personEmail);
             }
         });
         btnRouter.setOnClickListener(new View.OnClickListener() {
@@ -1008,7 +1008,7 @@ public class MapsActivity extends FragmentActivity
             }
         }
     }
-    public void uploadToServer(ArrayList<ArrayList<ArrayList<LatLng>>> router,String ID){
+    public void uploadToServer(ArrayList<ArrayList<ArrayList<LatLng>>> router,String ID,String mail){
         jsonObjectToServer=new JSONObject();
         try{
             jsonObjectToServer.put("id",ID);
@@ -1052,6 +1052,7 @@ public class MapsActivity extends FragmentActivity
                 Map<String, String> Map = new HashMap<String, String>();
                 Map.put("router", jsonObjectToServer.toString());
                 Map.put("ID",personName);
+                Map.put("email",personEmail);
                 Map.put("router_name","testfile");
                 return Map;
             }

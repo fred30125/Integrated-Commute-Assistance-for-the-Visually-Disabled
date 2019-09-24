@@ -62,6 +62,13 @@
             android:layout_weight="1"
             android:text="開始導航" />
         <Button
+            android:id="@+id/downloadRouter"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="5dp"
+            android:layout_weight="1"
+            android:text="下載" />
+        <Button
             android:id="@+id/btnUpload"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

@@ -21,7 +21,9 @@
             android:layout_centerVertical="true"
             android:layout_marginLeft="17dp"
             android:padding="8dp"
-            android:src="@drawable/to_down" />
+            android:src="@drawable/to_down"
+            />
+        <!--drawable 有可能出錯 -->
 
         <TextView
             android:id="@+id/tv_finish"

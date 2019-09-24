@@ -86,6 +86,8 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -115,7 +117,7 @@ public class MapsActivity extends FragmentActivity
 
     private GoogleMap mMap;
     private int test=0;
-    private Button setMarker,btnRouter,btnUpload,btn_CustomOptions;
+    private Button setMarker,btnRouter,btnUpload,btn_CustomOptions,downloadRouter;
     private GoogleApiClient googleApiClient;
     // Location請求物件
     private LocationRequest locationRequest;
@@ -160,6 +162,7 @@ public class MapsActivity extends FragmentActivity
     JSONObject jsonObjectToServer;
     private RequestQueue requestQueue;
     private StringRequest request;
+    ArrayList<ArrayList<ArrayList<LatLng>>> download_router;
 
     //------------google 會員資料-----------------
     GoogleSignInClient mGoogleSignInClient;
@@ -169,6 +172,7 @@ public class MapsActivity extends FragmentActivity
     String personEmail;
     String personId;
     private final  static String URL="http://163.25.101.33:80/loginapp/upload_router.php";
+    private final  static String downLoad_URL="http://163.25.101.33:80/loginapp/router_download.php";
     //------------picker view-------------------
     private List<JsonBean> options1Items = new ArrayList<>();
     private ArrayList<ArrayList<String>> options2Items = new ArrayList<>();
@@ -181,6 +185,11 @@ public class MapsActivity extends FragmentActivity
     private static boolean isLoaded = false;
     private ArrayList<CardBean> cardItem = new ArrayList<>();
     private OptionsPickerView pvCustomOptions;
+
+    //-----------download----------
+    JsonObject objFile;
+    JsonArray arrFile;
+    String strFile;
 
 
 
@@ -235,6 +244,7 @@ public class MapsActivity extends FragmentActivity
         setMarker=findViewById(R.id.setMarker);
         btnRouter=findViewById(R.id.getRouter);
         btnUpload=findViewById(R.id.btnUpload);
+        downloadRouter=findViewById(R.id.downloadRouter);
         btn_CustomOptions=findViewById(R.id.btn_CustomOptions);
 
 
@@ -247,6 +257,8 @@ public class MapsActivity extends FragmentActivity
                 pvCustomOptions.show();
             }
         });
+//----------end
+
 
         btnUpload.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -275,6 +287,12 @@ public class MapsActivity extends FragmentActivity
                     setMarkerStatus=false;
                     setMarker.setText("set:OFF");
                 }
+            }
+        });
+        downloadRouter.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                downloadToPhone();
             }
         });
 
@@ -774,14 +792,22 @@ public class MapsActivity extends FragmentActivity
                     JSONArray routeObject = jsonObject.getJSONArray("routes");
                     Log.i("direction test -2",routeObject.toString());
 
+                    objFile=new JsonObject();
+                    arrFile=new JsonArray();
+
+
                     JSONArray insObject = routeObject.getJSONObject(0).getJSONArray("legs");
                     Log.i("html測試",insObject.length()+"");
                     arraySteps=new ArrayList<>();
+
                     for(int i=0;i<insObject.length();i++){
+                        JsonObject jsonObject3=new JsonObject();
+                        JsonArray arrUpload1 = new JsonArray();
                         JSONArray insArray;
                         insArray=insObject.getJSONObject(i).getJSONArray("steps");
                         arrayPoints=new ArrayList<>();
                         for(int j=0;j<insArray.length();j++){
+                            JsonObject jsonObject2=new JsonObject();
                             String html_ins=new String();
                             html_ins=insArray.getJSONObject(j).getString("html_instructions");
                             Log.i("html測試", Html.fromHtml(html_ins).toString());
@@ -789,9 +815,35 @@ public class MapsActivity extends FragmentActivity
                             tmp=insArray.getJSONObject(j);
                             Log.i("html測試123",tmp.getJSONObject("polyline").getString("points"));
                             arrayPoints.add(decodePoly(tmp.getJSONObject("polyline").getString("points")));
+
+                            JsonArray arrfile=new JsonArray();
+
+                            for(int k=0;k<arrayPoints.get(j).size();k++){
+                                JsonObject jsonObject1=new JsonObject();
+                                double latitude = arrayPoints.get(j).get(k).latitude;
+                                double longitude = arrayPoints.get(j).get(k).longitude;
+                                jsonObject1.addProperty("lat",latitude);
+                                jsonObject1.addProperty("lon",longitude);
+                                arrfile.add(jsonObject1);
+                            }
+                            jsonObject2.add("steps",arrfile);
+                            arrUpload1.add(jsonObject2);
                         }
+                        //jsonObject3.add("legs",arrUpload1);
+                        jsonObject3.add("legs",arrUpload1);
+                        arrFile.add(jsonObject3);
                         arraySteps.add(arrayPoints);
                     }
+
+                    objFile.add("router",arrFile);
+                    //strFile=objFile+"";
+                   // strFile=strFile.replaceAll("\\\\","");
+
+                    Log.d("router!!",objFile+"");
+
+
+
+
                     for(int i=0;i<arraySteps.size();i++){
                         Log.i("arraytest",i+"");
                         for(int j=0;j<arraySteps.get(i).size();j++){
@@ -1034,6 +1086,37 @@ public class MapsActivity extends FragmentActivity
             Log.e("error on upload ID",e.toString());
         }
         try{
+            //test upload
+           /* JsonObject objSteps=new JsonObject();
+            JSONArray arrStepsLat=new JSONArray();
+            JSONArray arrStepsLon=new JSONArray();
+
+            for(int i=0;i<router.size();i++){
+
+
+                for(int j=0;j<router.get(i).size();j++){
+
+                    JsonObject objLegs=new JsonObject();
+
+                    for(int k=0;k<router.get(i).get(j).size();k++){
+                        arrStepsLat=new JSONArray();
+                        arrStepsLon=new JSONArray();
+                        arrStepsLat.put(router.get(i).get(j).get(k).latitude);
+                        arrStepsLon.put(router.get(i).get(j).get(k).longitude);
+
+                    }
+
+
+                }
+
+            }*/
+
+
+
+
+
+
+
             jsonObjectToServer.put("Router",router.toString());
         } catch (Exception e) {
             Log.e("error on upload Router",e.toString());
@@ -1049,8 +1132,7 @@ public class MapsActivity extends FragmentActivity
                     JSONObject jsonObject=new JSONObject(response);
                     if(jsonObject.names().get(0).equals("success")){
                         Toast.makeText(getApplicationContext(),"SUCCESS!!"+jsonObject.getString("success"),Toast.LENGTH_SHORT).show();
-                        startActivity( new Intent(getApplicationContext(),LoginActivity.class));
-                        finish();
+
                     }else{
                         Toast.makeText(getApplicationContext(),"Error!!"+jsonObject.getString("error"),Toast.LENGTH_SHORT).show();
                     }
@@ -1068,9 +1150,62 @@ public class MapsActivity extends FragmentActivity
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
                 Map<String, String> Map = new HashMap<String, String>();
-                Map.put("router", jsonObjectToServer.toString());
+                //Map.put("router", jsonObjectToServer.toString());
+                if(objFile!=null){
+                    Map.put("router", objFile.toString());
+                }
+
                 Map.put("ID",personName);
                 Map.put("email",personEmail);
+                Map.put("router_name","testfile");
+                return Map;
+            }
+        };
+        requestQueue.add(request);
+    }
+    //download to cellphone
+    public void downloadToPhone(){
+        jsonObjectToServer=new JSONObject();
+       /* try{
+            jsonObjectToServer.put("id",ID);
+        } catch (Exception e) {
+            Log.e("error on upload ID",e.toString());
+        }
+        Log.i("check upload messenger",jsonObjectToServer.toString());*/
+
+
+        //--------------upload start---------------------------
+        request = new StringRequest(com.android.volley.Request.Method.POST, downLoad_URL, new com.android.volley.Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
+                    JSONObject jsonObject=new JSONObject(response);
+                    if(jsonObject.names().get(0).equals("id")){
+                        //Toast.makeText(getApplicationContext(),"SUCCESS!!"+jsonObject.getString("Router"),Toast.LENGTH_SHORT).show();
+                        Log.i("getRouter",jsonObject.getString("Router"));
+                        download_router.clear();
+                        //jsonObject.getJSONArray("Router");
+
+
+
+                    }else{
+                        Toast.makeText(getApplicationContext(),"Error!!"+jsonObject.getString("error"),Toast.LENGTH_SHORT).show();
+                    }
+                } catch (JSONException e) {
+                    Log.e("error",e.toString());
+                    e.printStackTrace();
+                }
+            }
+        }, new com.android.volley.Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String, String> Map = new HashMap<String, String>();
+                Map.put("ID",personName);
                 Map.put("router_name","testfile");
                 return Map;
             }

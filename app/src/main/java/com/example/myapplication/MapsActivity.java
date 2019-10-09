@@ -30,7 +30,11 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.Html;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -65,6 +69,12 @@ import com.example.myapplication.bean.CardBean;
 import com.example.myapplication.bean.JsonBean;
 import com.example.myapplication.common.logger.LogWrapper;
 import com.example.myapplication.common.logger.MessageOnlyLogFilter;
+import com.example.myapplication.setting.AppClientManager;
+import com.example.myapplication.setting.DisplayStopOfRoute.DisplayStopOfRoute;
+import com.example.myapplication.setting.GetRoute;
+import com.example.myapplication.setting.GetRouteOrder;
+import com.example.myapplication.setting.GetStopDataUtil;
+import com.example.myapplication.setting.Gson_StopOrder.BusRouteOrder;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -86,8 +96,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -96,11 +105,10 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.URL;
 import java.text.MessageFormat;
-import java.text.NumberFormat;
+
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -134,7 +142,8 @@ public class MapsActivity extends FragmentActivity
     PolylineOptions lineOptions;
     Polyline polyline;
     String dirPolyline;
-    private BluetoothChatFragment bluetoothChatFragment;
+  //  private BluetoothChatFragment bluetoothChatFragment;
+
     Boolean setMarkerStatus=false;
     int markerTotal;
 
@@ -190,9 +199,31 @@ public class MapsActivity extends FragmentActivity
     //-----------download----------
     JSONObject objFile;
     JSONArray arrFile;
-    String strFile;
     ArrayList<String> getRouterNameArr;
 
+    //------------筱琪--------------
+   // GetStopDataUtil getStopDataUtil=new GetStopDataUtil();
+    LinkedList<HashMap<String, String>> mGetRouteList;
+    String Data = "";
+    String City_a = "Taipei";
+    String Query = "";
+    LinkedList<HashMap<String, String>> routeList = new LinkedList<>();
+    List<String> routeOrder = new ArrayList<String>();
+    List<String> SameDestanationRouteList = new ArrayList<String>();
+    //----------------------------Test Data------------------------------
+    String StopName1 = "中央路"; //上車
+    String StopName2 = "忠孝路";  //下車站牌
+
+
+    //--------------筱淇----------------
+
+    //-----------text Router-----------
+    //TextView txtRouter;
+    //-------------recycle------------
+    private RecyclerView recyclerView;
+    private RouteAdapter routeAdapter;
+    private List<RouterData> data_list;
+    LatLng routerPoints;
 
 
     @Override
@@ -229,7 +260,8 @@ public class MapsActivity extends FragmentActivity
         arraySteps=new ArrayList<>();
 
 
-        bluetoothChatFragment=new BluetoothChatFragment();
+       // bluetoothChatFragment=new BluetoothChatFragment();
+
         ActivityCompat.requestPermissions(MapsActivity.this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION},123);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -239,9 +271,9 @@ public class MapsActivity extends FragmentActivity
 
         configGoogleApiClient();
         configLocationRequest();
-        getSupportFragmentManager().beginTransaction()
+       /* getSupportFragmentManager().beginTransaction()
         .replace(R.id.sample_content_fragment, bluetoothChatFragment)
-        .commit();
+        .commit();*/
         google_maps_key=getResources().getString(R.string.google_maps_key);
         setMarker=findViewById(R.id.setMarker);
         btnRouter=findViewById(R.id.getRouter);
@@ -249,6 +281,23 @@ public class MapsActivity extends FragmentActivity
         downloadRouter=findViewById(R.id.downloadRouter);
         btn_CustomOptions=findViewById(R.id.btn_CustomOptions);
 
+        recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+        data_list=new ArrayList<>();
+        //gridLayoutManager=new GridLayoutManager(this,1);
+
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        routeAdapter=new RouteAdapter(this,data_list);
+        
+        recyclerView.setAdapter(routeAdapter);
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+            }
+        });
+       // txtRouter=findViewById(R.id.txtRouter);
+
+      //  txtRouter.setMovementMethod(new ScrollingMovementMethod());
 
 //-----------picker view
         getCardData();
@@ -274,12 +323,31 @@ public class MapsActivity extends FragmentActivity
         btnRouter.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(points!=null){
+                //origin!!!!!!!!!!
+    /*            if(points!=null){
                     nowPoint=new int[3];
                     nowPoint[0]=0;
                     nowPoint[1]=0;
                     nowPoint[2]=0;
-                }
+                }*/
+    //test~~~~~~~~~~~~~~~~~
+                new Thread(new Runnable() {
+                    public void run() {
+                        RouteOrder();
+                        Log.e("HELLO 整合",routeList.size()+"");
+                        //這邊是背景thread在運作, 這邊可以處理比較長時間或大量的運算
+
+                       /* ((Activity) mContext).runOnUiThread(new Runnable() {
+                            public void run() {
+                                //這邊是呼叫main thread handler幫我們處理UI部分
+                            }
+                        });*/
+                    }
+                }).start();
+
+
+
+
             }
         });
         setMarker.setOnClickListener(new View.OnClickListener() {
@@ -395,7 +463,6 @@ public class MapsActivity extends FragmentActivity
 
 
 
-
     }
     //地圖creat好的時候執行
     @Override
@@ -412,6 +479,20 @@ public class MapsActivity extends FragmentActivity
             public View getInfoContents(Marker marker) {
                 if(marker.getSnippet().equals("bus")){
                     if (isLoaded) {
+                        StopName1=marker.getTitle();
+                        RouteOrder();
+                        Log.e("HELLO 整合",routeList.size()+"");
+//                        getStopDataUtil.setStopName1(marker.getTitle());
+//                        Log.e("HELLO 整合", "路線: " + marker.getTitle());
+//                        getStopDataUtil.RouteOrder(); //太慢
+//
+//                        mGetRouteList=getStopDataUtil.getRouteList(); //讚讚
+//                        Log.e("mGetRouteList",mGetRouteList.size()+"");
+//                        for (int i = 0; i < mGetRouteList.size(); i++) {
+//                            Log.e("HELLO 整合", "路線: " + mGetRouteList.get(i).get("RouteNumb") + "方向: " + mGetRouteList.get(i).get("Direction"));
+//
+//                        }
+
                         showPickerView();
                     } else {
                         Toast.makeText(MapsActivity.this, "Please waiting until the data is parsed", Toast.LENGTH_SHORT).show();
@@ -519,9 +600,9 @@ public class MapsActivity extends FragmentActivity
     private void configLocationRequest() {
         locationRequest = new LocationRequest();
         // 設定讀取位置資訊更新的間隔時間為一秒（1000ms）
-        locationRequest.setInterval(500);
+        locationRequest.setInterval(1000);
         // 設定從API讀取位置資訊的間隔時間為一秒（1000ms）
-        locationRequest.setFastestInterval(500);
+        locationRequest.setFastestInterval(1000);
         // 設定優先讀取高精確度的位置資訊（GPS）
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
     }
@@ -544,7 +625,7 @@ public class MapsActivity extends FragmentActivity
     }
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        Log.i("GPS", "requestCode=" + requestCode);
+        //Log.i("GPS", "requestCode=" + requestCode);
         switch (requestCode) {
             case 0: { // location
                 if (grantResults.length > 0
@@ -575,6 +656,7 @@ public class MapsActivity extends FragmentActivity
         // 取得目前位置
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
         currentLocation=latLng;
+        Log.v("currentLocation data",currentLocation.toString());
        // mMap.clear();
         // 設定目前位置的marker
         if (currentMarker == null) {
@@ -732,12 +814,12 @@ public class MapsActivity extends FragmentActivity
             SensorManager.getRotationMatrix(R, null, acceleromterValues, magneticValues);
             SensorManager.getOrientation(R, values);
             float roteteDegree = (float) Math.round(event.values[0]);
-            Log.i("12345",roteteDegree+"");
+            //Log.i("12345",roteteDegree+"");
             if (roteteDegree < 0) roteteDegree = 360 + roteteDegree;
             if (roteteDegree < 0 || roteteDegree > 360) return;
             float offset = roteteDegree - lastRotateDegree;
             if (Math.abs(offset) < 0.5f) return;
-            Log.i("1234",roteteDegree+"");
+            //Log.i("1234",roteteDegree+"");
             updateCamera(roteteDegree);
             lastRotateDegree=roteteDegree;
         }
@@ -778,6 +860,8 @@ public class MapsActivity extends FragmentActivity
         return url;
     }
     private void getDirection(LatLng origin,LatLng dest){
+       // txtRouter.setText("");
+
         String mapAPI = getDirectionsUrl(origin,dest);
         String url = MessageFormat.format(mapAPI, origin, dest);
         Log.i("direction test url",url);
@@ -803,10 +887,11 @@ public class MapsActivity extends FragmentActivity
                     objFile=new JSONObject();
                     arrFile=new JSONArray();
 
-
+                    data_list.clear();
                     JSONArray insObject = routeObject.getJSONObject(0).getJSONArray("legs");
                     Log.i("html測試",insObject.length()+"");
                     arraySteps=new ArrayList<>();
+
 
                     for(int i=0;i<insObject.length();i++){
                         JSONObject jsonObject3=new JSONObject();
@@ -817,8 +902,14 @@ public class MapsActivity extends FragmentActivity
                         for(int j=0;j<insArray.length();j++){
                             JSONObject jsonObject2=new JSONObject();
                             String html_ins=new String();
+                            double tmpLat=insArray.getJSONObject(j).getJSONObject("start_location").getDouble("lat");
+                            double tmpLng=insArray.getJSONObject(j).getJSONObject("start_location").getDouble("lng");
+                            LatLng tmpLatLng=new LatLng(tmpLat,tmpLng);
+
                             html_ins=insArray.getJSONObject(j).getString("html_instructions");
                             Log.i("html測試", Html.fromHtml(html_ins).toString());
+                            sethtmlTxt(Html.fromHtml(html_ins).toString(),tmpLatLng);
+
                             JSONObject tmp;
                             tmp=insArray.getJSONObject(j);
                             Log.i("html測試123",tmp.getJSONObject("polyline").getString("points"));
@@ -1526,12 +1617,138 @@ public class MapsActivity extends FragmentActivity
     }
 
 
+    public void sethtmlTxt(final String str,final LatLng latLng){
+        runOnUiThread(new Runnable() {
+            public void run() {
+               // txtRouter.append(str+"\n");
+                RouterData data = new RouterData();
+                data.setDescription(str);
+                data.setLatLng(latLng);
+                Log.i("adapter",data.getDescription());
+                data_list.add(data);
+                routeAdapter.notifyDataSetChanged();
+            }
+        });
+    }
 
 
+    //-----------筱淇---------------
+    public void RouteOrder() {
+        Log.e("loc", "現在執行的函式是= route_order");
+        Data = "DisplayStopOfRoute";
+        City_a = "Taipei";
+        Query = "?$top=200&$format=JSON";
+        routeList=new LinkedList<>();
+
+        GetRouteOrder GetRouteOrder = AppClientManager.getClient().create(GetRouteOrder.class);
+        GetRouteOrder.GetRouteorder(Data, City_a, Query).enqueue(new retrofit2.Callback<List<DisplayStopOfRoute>>() {
+            @Override
+            public void onResponse(retrofit2.Call<List<DisplayStopOfRoute>> call, retrofit2.Response<List<DisplayStopOfRoute>> response) {
+                Log.e("OkHttp", "車牌順序成功了啦 response = " + response.body().toString());
+                List<DisplayStopOfRoute> list = response.body();
+                HashMap<String, String> RouteNumbList;
+
+                for (DisplayStopOfRoute p : list) {
+                    // Log.e("RouteNumbList", p.getRouteName().getZhTw()+"="+p.getStops().size());
+
+                    for (int i = 0; i < p.getStops().size(); i++) {
+                        RouteNumbList = new HashMap<>();
+                        if (p.getStops().get(i).getStopName().getZhTw().equals(StopName1)) { //放公車站名
+                            RouteNumbList.put("RouteNumb", p.getRouteName().getZhTw());// 站牌抓有的公車號碼 RouteNumbList
+                            RouteNumbList.put("Direction", p.getDirection().toString());
+                            Log.e("RouteNumbList", p.getRouteName().getZhTw());
+                            Log.e("RouteNumbList", p.getDirection().toString());
+                            routeList.add(RouteNumbList);
+                        }
+
+                    }
+                }
+                Log.d("loc", "現在執行結束的函式是= route_order");
+                Log.d("loc123123", routeList.size()+"");
+                for (int i = 0; i < routeList.size(); i++) {
+                    Log.e("routeList", "路線: " + routeList.get(i).get("RouteNumb") + "方向: " + routeList.get(i).get("Direction"));
+                  /*  Route(routeList.get(i).get("RouteNumb"), routeList.get(i).get("Direction"));
+                    SameDestanationRoute(routeList.get(i).get("RouteNumb"), routeList.get(i).get("Direction"));*/
+                }
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<List<DisplayStopOfRoute>> call, Throwable t) {
+                Log.e("OkHttp", "車牌順序的資料連接，怎麼會失敗");
+            }
+        });
+        Log.d("loc", "現在執行結束的函式是= route_order");
+    }
 
 
+    //    用來當順序
+//    不用改
+    public void Route(String RouteNumb, final String Direction) { //輸入公車號碼+方向->找到該路線的站牌資料 routeOrder
+        Log.e("loc", "現在執行的函式是= route_order");
+        Data = "StopOfRoute";
+        City_a = "Taipei";
+        Query = "?$top=2";
+        final String route = RouteNumb;
+        final String direction = Direction;
+        GetRoute GetRoute = AppClientManager.getClient().create(GetRoute.class);
+        GetRoute.GetRouteorder(Data, City_a, route, Query).enqueue(new retrofit2.Callback<List<BusRouteOrder>>() {
+            @Override
+            public void onResponse(retrofit2.Call<List<BusRouteOrder>> call, retrofit2.Response<List<BusRouteOrder>> response) {
+                Log.e("OkHttp", "車牌順序成功了啦 response = " + response.body().toString());
+                List<BusRouteOrder> list = response.body();
+                for (BusRouteOrder p : list) {
+                    if (p.getDirection().toString().equals(direction)) {//dep
+                        for (int i = 0; i < p.getStopOrders().size(); i++) {
+                            routeOrder.add(i, p.getStopOrders().get(i).getStopName().getZhTw()); //
+                            Log.e("列出下車站牌", routeOrder.get(i));
+                        }
+                    }
+                }
+                Log.d("loc", "現在執行結束的函式是= route_order");
+            }
 
+            @Override
+            public void onFailure(retrofit2.Call<List<BusRouteOrder>> call, Throwable t) {
+                Log.e("OkHttp", "車牌順序的資料連接，怎麼會失敗");
+            }
+        });
+        Log.d("loc", "現在執行結束的函式是= route_order");
+    }
 
+    //找同一個下車站牌
+    public void SameDestanationRoute(String RouteNumb, final String Direction) {// 1211          1回..0去
+        Log.e("loc", "現在執行的函式是= route_order");
+        Data = "StopOfRoute";
+        City_a = "Taipei";
+        Query = "?$top=2";
+        final String route = RouteNumb;
+        final String direction = Direction;
+        GetRoute GetRoute = AppClientManager.getClient().create(GetRoute.class);
+        GetRoute.GetRouteorder(Data, City_a, route, Query).enqueue(new retrofit2.Callback<List<BusRouteOrder>>() {
+            @Override
+            public void onResponse(retrofit2.Call<List<BusRouteOrder>> call, retrofit2.Response<List<BusRouteOrder>> response) {
+                Log.e("OkHttp", "車牌順序成功了啦 response = " + response.body().toString());
+                List<BusRouteOrder> list = response.body();
+                for (BusRouteOrder p : list) {
+                    if (p.getDirection().toString().equals(direction)) {//dep
+                        for (int i = 0; i < p.getStopOrders().size(); i++) {
+                            if (p.getStopOrders().get(i).getStopName().getZhTw().equals(StopName1)) {
+                                SameDestanationRouteList.add(route);
+                                Log.d("SameDestanationRoute", "列出相同的路線: " + route);
+                            }
+                        }
+                    }
+                }
+                Log.d("loc", "現在執行結束的函式是= route_order");
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<List<BusRouteOrder>> call, Throwable t) {
+                Log.e("OkHttp", "車牌順序的資料連接，怎麼會失敗");
+            }
+        });
+        Log.d("loc", "現在執行結束的函式是= route_order");
+    }
 
 
 

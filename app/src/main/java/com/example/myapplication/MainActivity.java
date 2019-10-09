@@ -38,7 +38,7 @@ import com.example.myapplication.common.logger.MessageOnlyLogFilter;
  */
 public class MainActivity extends SampleActivityBase implements BluetoothChatFragment.OnMyListener{
 
-    public static final String TAG = "MainActivity";
+
 
     // Whether the Log Fragment is currently shown
     private boolean mLogShown;
@@ -93,7 +93,7 @@ public class MainActivity extends SampleActivityBase implements BluetoothChatFra
         MessageOnlyLogFilter msgFilter = new MessageOnlyLogFilter();
         logWrapper.setNext(msgFilter);
 
-        Log.i(TAG, "Ready");
+        //Log.i(TAG, "Ready");
     }
 
     @Override

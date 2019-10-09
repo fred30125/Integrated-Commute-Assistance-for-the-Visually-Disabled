@@ -83,6 +83,8 @@
             android:configChanges="orientation|keyboardHidden"
             android:label="@string/select_device"
             android:theme="@android:style/Theme.Holo.Dialog"/>
+
+
         <uses-library android:name="org.apache.http.legacy" android:required="false"/>
 
         <uses-library android:name="com.google.android.maps" />

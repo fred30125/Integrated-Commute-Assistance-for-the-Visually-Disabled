@@ -1,5 +1,5 @@
 
-package com.example.myapplication.setting.DisplayStopOfRoute;
+package com.example.myapplication.setting.StopOfRoute;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -27,6 +27,9 @@ public class Stop {
     @SerializedName("StationID")
     @Expose
     private String stationID;
+    @SerializedName("LocationCityCode")
+    @Expose
+    private String locationCityCode;
 
     public String getStopUID() {
         return stopUID;
@@ -82,6 +85,14 @@ public class Stop {
 
     public void setStationID(String stationID) {
         this.stationID = stationID;
+    }
+
+    public String getLocationCityCode() {
+        return locationCityCode;
+    }
+
+    public void setLocationCityCode(String locationCityCode) {
+        this.locationCityCode = locationCityCode;
     }
 
 }

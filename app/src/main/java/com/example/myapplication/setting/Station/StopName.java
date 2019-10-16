@@ -1,5 +1,5 @@
 
-package com.example.myapplication.setting.DisplayStopOfRoute;
+package com.example.myapplication.setting.Station;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;

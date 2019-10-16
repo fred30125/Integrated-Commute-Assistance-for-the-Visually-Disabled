@@ -1,22 +1,13 @@
 
-package com.example.myapplication.setting.DisplayStopOfRoute;
+package com.example.myapplication.setting.StopOfRoute;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
 
-public class DisplayStopOfRoute {
+public class StopOfRoute {
 
-    @SerializedName("RouteUID")
-    @Expose
-    private String routeUID;
-    @SerializedName("RouteID")
-    @Expose
-    private String routeID;
-    @SerializedName("RouteName")
-    @Expose
-    private RouteName routeName;
     @SerializedName("Direction")
     @Expose
     private Integer direction;
@@ -29,30 +20,6 @@ public class DisplayStopOfRoute {
     @SerializedName("VersionID")
     @Expose
     private Integer versionID;
-
-    public String getRouteUID() {
-        return routeUID;
-    }
-
-    public void setRouteUID(String routeUID) {
-        this.routeUID = routeUID;
-    }
-
-    public String getRouteID() {
-        return routeID;
-    }
-
-    public void setRouteID(String routeID) {
-        this.routeID = routeID;
-    }
-
-    public RouteName getRouteName() {
-        return routeName;
-    }
-
-    public void setRouteName(RouteName routeName) {
-        this.routeName = routeName;
-    }
 
     public Integer getDirection() {
         return direction;

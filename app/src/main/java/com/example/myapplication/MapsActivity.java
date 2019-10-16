@@ -70,11 +70,10 @@ import com.example.myapplication.bean.JsonBean;
 import com.example.myapplication.common.logger.LogWrapper;
 import com.example.myapplication.common.logger.MessageOnlyLogFilter;
 import com.example.myapplication.setting.AppClientManager;
-import com.example.myapplication.setting.DisplayStopOfRoute.DisplayStopOfRoute;
-import com.example.myapplication.setting.GetRoute;
-import com.example.myapplication.setting.GetRouteOrder;
-import com.example.myapplication.setting.GetStopDataUtil;
-import com.example.myapplication.setting.Gson_StopOrder.BusRouteOrder;
+import com.example.myapplication.setting.GetStation;
+import com.example.myapplication.setting.GetStopOfRoute;
+import com.example.myapplication.setting.Station.Station;
+import com.example.myapplication.setting.StopOfRoute.StopOfRoute;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -202,23 +201,41 @@ public class MapsActivity extends FragmentActivity
     ArrayList<String> getRouterNameArr;
 
     //------------筱琪--------------
-   // GetStopDataUtil getStopDataUtil=new GetStopDataUtil();
-    LinkedList<HashMap<String, String>> mGetRouteList;
-    String Data = "";
-    String City_a = "Taipei";
-    String Query = "";
-    LinkedList<HashMap<String, String>> routeList = new LinkedList<>();
+    String Data="";
+    String City_a="Taipei";
+    String Query="";
+    String Start="";
+    String Dir="";
+    //LinkedList<HashMap<String, String>> routeList = new LinkedList<>();
     List<String> routeOrder = new ArrayList<String>();
-    List<String> SameDestanationRouteList = new ArrayList<String>();
+    List<String> routeList = new ArrayList<String>();
+    List<String> SameDepartureRouteList = new ArrayList<String>();
+    List<String> SameDestationRouteList = new ArrayList<String>();
     //----------------------------Test Data------------------------------
-    String StopName1 = "中央路"; //上車
-    String StopName2 = "忠孝路";  //下車站牌
+    String StopName1="金陵女中";
+    double endLat;
+    double endLon;
+
+//    protected void onCreate(Bundle savedInstanceState) {
+//        super.onCreate(savedInstanceState);
+//        setContentView(R.layout.activity_main);
+//        Button start =findViewById(R.id.start);
+//        start.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                //RouteOfStation(25.04533292,121.4688372,50);
+//                //StopOfRoute("513","0");
+//                //RouteOrder();
+//                //EndStationFindBus(25.04533292,121.4688372,50,"中興街口");
+//                SameDestinationRoute("513","1","中興街口","捷運輔大站");
+//            }
+//        });
+//    }
 
 
     //--------------筱淇----------------
 
-    //-----------text Router-----------
-    //TextView txtRouter;
+
     //-------------recycle------------
     private RecyclerView recyclerView;
     private RouteAdapter routeAdapter;
@@ -258,6 +275,7 @@ public class MapsActivity extends FragmentActivity
         lineOptions = new PolylineOptions(); // 多邊形
         arrayPoints = new ArrayList<>();
         arraySteps=new ArrayList<>();
+        routerPoints=null;
 
 
        // bluetoothChatFragment=new BluetoothChatFragment();
@@ -283,12 +301,26 @@ public class MapsActivity extends FragmentActivity
 
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         data_list=new ArrayList<>();
-        //gridLayoutManager=new GridLayoutManager(this,1);
-
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        routeAdapter=new RouteAdapter(this,data_list);
-        
+        recyclerView.setHasFixedSize(true);
+        routeAdapter=new RouteAdapter(data_list);
         recyclerView.setAdapter(routeAdapter);
+
+
+        routeAdapter.setOnItemClickListener(new RouteAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(int position) {
+                Log.i("pikachuuuu!!",position+"");
+                routerPoints=data_list.get(position).getLatLng();
+                drawAll();
+                //Toast.makeText(MapsActivity.this,data_list.get(position).getLatLng()+"",Toast.LENGTH_LONG).show();
+            }
+        });
+
+
+        //-----------設定click事件
+
+
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
@@ -333,7 +365,7 @@ public class MapsActivity extends FragmentActivity
     //test~~~~~~~~~~~~~~~~~
                 new Thread(new Runnable() {
                     public void run() {
-                        RouteOrder();
+                        //RouteOrder();
                         Log.e("HELLO 整合",routeList.size()+"");
                         //這邊是背景thread在運作, 這邊可以處理比較長時間或大量的運算
 
@@ -480,7 +512,7 @@ public class MapsActivity extends FragmentActivity
                 if(marker.getSnippet().equals("bus")){
                     if (isLoaded) {
                         StopName1=marker.getTitle();
-                        RouteOrder();
+                        //RouteOrder();
                         Log.e("HELLO 整合",routeList.size()+"");
 //                        getStopDataUtil.setStopName1(marker.getTitle());
 //                        Log.e("HELLO 整合", "路線: " + marker.getTitle());
@@ -952,6 +984,7 @@ public class MapsActivity extends FragmentActivity
                     Log.i("arraytest123",arraySteps.toString()+"");
                    /* dirPolyline=new String();
                     dirPolyline= routeObject.getJSONObject(0).getJSONObject("overview_polyline").getString("points");*/
+                   routerPoints=null;
                     drawAll();
 
                 } catch (JSONException e) {
@@ -1035,6 +1068,14 @@ public class MapsActivity extends FragmentActivity
                         } catch (Exception e) {
 
                         }
+                    }
+                    if(routerPoints!=null){
+                        mMap.addMarker(new MarkerOptions()
+                                .title("路徑播報")
+                                .snippet("router")
+                                .position(routerPoints)
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.to_down)));
+
                     }
 
                     if(arraySteps!=null){
@@ -1633,122 +1674,137 @@ public class MapsActivity extends FragmentActivity
 
 
     //-----------筱淇---------------
-    public void RouteOrder() {
-        Log.e("loc", "現在執行的函式是= route_order");
-        Data = "DisplayStopOfRoute";
+    //點擊app上的公車mark可以獲得座標，利用座標找出站牌名稱，並且列出站牌中有哪幾路公車
+    //這站有哪幾路公車 資料存在 routeList
+    //distance:單位是公尺&抓下來DataType=int
+    //列德func都填0 func=1:用來下車車站中有哪幾路有到上車車站的將資料存在SameDestationRouteList
+    private  void RouteOfStation(double CenterLat,double CenterLon,int distance,final int func){
+        Log.e("loc", "現在執行的函式是= RouteOfStation");
+        Data = "Station";
         City_a = "Taipei";
-        Query = "?$top=200&$format=JSON";
-        routeList=new LinkedList<>();
-
-        GetRouteOrder GetRouteOrder = AppClientManager.getClient().create(GetRouteOrder.class);
-        GetRouteOrder.GetRouteorder(Data, City_a, Query).enqueue(new retrofit2.Callback<List<DisplayStopOfRoute>>() {
+        Query = "?$select=Stops&$top=10&$spatialFilter=nearby(StationPosition%2C" +
+                CenterLat+"%2C" +CenterLon+"%2C"+distance+")&$format=JSON";
+        if(func==1){
+            Query = "?$select=Stops&$top=1&$spatialFilter=nearby(StationPosition%2C" +
+                    CenterLat+"%2C" +CenterLon+"%2C"+distance+")&$format=JSON";
+        }
+        GetStation GetStation = AppClientManager.getClient().create(GetStation.class);
+        GetStation.GetStation(Data, City_a,"",Query).enqueue(new retrofit2.Callback<List<Station>>() {
             @Override
-            public void onResponse(retrofit2.Call<List<DisplayStopOfRoute>> call, retrofit2.Response<List<DisplayStopOfRoute>> response) {
-                Log.e("OkHttp", "車牌順序成功了啦 response = " + response.body().toString());
-                List<DisplayStopOfRoute> list = response.body();
-                HashMap<String, String> RouteNumbList;
-
-                for (DisplayStopOfRoute p : list) {
-                    // Log.e("RouteNumbList", p.getRouteName().getZhTw()+"="+p.getStops().size());
-
+            public void onResponse(retrofit2.Call<List<Station>> call, retrofit2.Response<List<Station>> response) {
+                Log.e("OkHttp", "車站的路線載入成功了啦 response = " + response.body().toString());
+                List<Station> list = response.body();
+                if(func==1){
+                    SameDestationRouteList.clear();
+                }
+                for (Station p : list) {
                     for (int i = 0; i < p.getStops().size(); i++) {
-                        RouteNumbList = new HashMap<>();
-                        if (p.getStops().get(i).getStopName().getZhTw().equals(StopName1)) { //放公車站名
-                            RouteNumbList.put("RouteNumb", p.getRouteName().getZhTw());// 站牌抓有的公車號碼 RouteNumbList
-                            RouteNumbList.put("Direction", p.getDirection().toString());
-                            Log.e("RouteNumbList", p.getRouteName().getZhTw());
-                            Log.e("RouteNumbList", p.getDirection().toString());
-                            routeList.add(RouteNumbList);
+                        if(func==1){
+                            SameDestationRouteList.add(p.getStops().get(i).getRouteName().getZhTw());
+                            Log.e("func<2>下車站牌的全部路線:",p.getStops().get(i).getRouteName().getZhTw());
+                        }else{
+                            routeList.add(i, p.getStops().get(i).getRouteName().getZhTw());
+                            Log.e("RouteNumbList", p.getStops().get(i).getRouteName().getZhTw());
                         }
-
                     }
-                }
-                Log.d("loc", "現在執行結束的函式是= route_order");
-                Log.d("loc123123", routeList.size()+"");
-                for (int i = 0; i < routeList.size(); i++) {
-                    Log.e("routeList", "路線: " + routeList.get(i).get("RouteNumb") + "方向: " + routeList.get(i).get("Direction"));
-                  /*  Route(routeList.get(i).get("RouteNumb"), routeList.get(i).get("Direction"));
-                    SameDestanationRoute(routeList.get(i).get("RouteNumb"), routeList.get(i).get("Direction"));*/
-                }
-            }
-
-            @Override
-            public void onFailure(retrofit2.Call<List<DisplayStopOfRoute>> call, Throwable t) {
-                Log.e("OkHttp", "車牌順序的資料連接，怎麼會失敗");
-            }
-        });
-        Log.d("loc", "現在執行結束的函式是= route_order");
-    }
-
-
-    //    用來當順序
-//    不用改
-    public void Route(String RouteNumb, final String Direction) { //輸入公車號碼+方向->找到該路線的站牌資料 routeOrder
-        Log.e("loc", "現在執行的函式是= route_order");
-        Data = "StopOfRoute";
-        City_a = "Taipei";
-        Query = "?$top=2";
-        final String route = RouteNumb;
-        final String direction = Direction;
-        GetRoute GetRoute = AppClientManager.getClient().create(GetRoute.class);
-        GetRoute.GetRouteorder(Data, City_a, route, Query).enqueue(new retrofit2.Callback<List<BusRouteOrder>>() {
-            @Override
-            public void onResponse(retrofit2.Call<List<BusRouteOrder>> call, retrofit2.Response<List<BusRouteOrder>> response) {
-                Log.e("OkHttp", "車牌順序成功了啦 response = " + response.body().toString());
-                List<BusRouteOrder> list = response.body();
-                for (BusRouteOrder p : list) {
-                    if (p.getDirection().toString().equals(direction)) {//dep
-                        for (int i = 0; i < p.getStopOrders().size(); i++) {
-                            routeOrder.add(i, p.getStopOrders().get(i).getStopName().getZhTw()); //
-                            Log.e("列出下車站牌", routeOrder.get(i));
+                    if(func==1){
+                        for(int i=0;i<SameDestationRouteList.size();i++){
+                            Log.e("func<3>要帶入StopOfRoute的", "下車路線="+SameDestationRouteList.get(i));
+                            StopOfRoute(SameDestationRouteList.get(i),Dir,1);
                         }
                     }
                 }
-                Log.d("loc", "現在執行結束的函式是= route_order");
             }
-
             @Override
-            public void onFailure(retrofit2.Call<List<BusRouteOrder>> call, Throwable t) {
-                Log.e("OkHttp", "車牌順序的資料連接，怎麼會失敗");
+            public void onFailure(retrofit2.Call<List<Station>> call, Throwable t) {
+                Log.e("OkHttp", "車站的路線載入，怎麼會失敗");
             }
         });
-        Log.d("loc", "現在執行結束的函式是= route_order");
     }
 
-    //找同一個下車站牌
-    public void SameDestanationRoute(String RouteNumb, final String Direction) {// 1211          1回..0去
-        Log.e("loc", "現在執行的函式是= route_order");
+    //------------------------------------------------------------------------------
+    //點選公車站中某一路公車，抓出這台公車的站牌順序資料，並且分為往返方向
+    //站序資料存在routeOrder
+    //這路公車往?方向的站序資料//dir="0"表示去程 ; dir="1"表示返程
+    //ex RouteNumb=1211
+    //列德func都填0 func=1:用來看下車車站中的路線那些有經過上車車站
+    private  void StopOfRoute(final String RouteNumb, final String dir, final int func){
+        Log.e("loc", "現在執行的函式是= StopOfRoute");
         Data = "StopOfRoute";
         City_a = "Taipei";
-        Query = "?$top=2";
-        final String route = RouteNumb;
-        final String direction = Direction;
-        GetRoute GetRoute = AppClientManager.getClient().create(GetRoute.class);
-        GetRoute.GetRouteorder(Data, City_a, route, Query).enqueue(new retrofit2.Callback<List<BusRouteOrder>>() {
+        Query = "?$select=Stops&$top=30&$format=JSON";
+        GetStopOfRoute GetStopOfRoute = AppClientManager.getClient().create(GetStopOfRoute.class);
+        GetStopOfRoute.GetStopOfRoute(Data, City_a, RouteNumb, Query).enqueue(new retrofit2.Callback<List<StopOfRoute>>() {
             @Override
-            public void onResponse(retrofit2.Call<List<BusRouteOrder>> call, retrofit2.Response<List<BusRouteOrder>> response) {
+            public void onResponse(retrofit2.Call<List<StopOfRoute>> call, retrofit2.Response<List<StopOfRoute>> response) {
                 Log.e("OkHttp", "車牌順序成功了啦 response = " + response.body().toString());
-                List<BusRouteOrder> list = response.body();
-                for (BusRouteOrder p : list) {
-                    if (p.getDirection().toString().equals(direction)) {//dep
-                        for (int i = 0; i < p.getStopOrders().size(); i++) {
-                            if (p.getStopOrders().get(i).getStopName().getZhTw().equals(StopName1)) {
-                                SameDestanationRouteList.add(route);
-                                Log.d("SameDestanationRoute", "列出相同的路線: " + route);
+                List<StopOfRoute> list = response.body();
+                for (StopOfRoute p : list) {
+                    if (p.getDirection().toString().equals(dir)) {//確定方向
+                        for (int i = 0; i < p.getStops().size(); i++) {
+                            if(func==1){
+                                if(p.getStops().get(i).getStopName().getZhTw().equals(Start)){
+                                    SameDepartureRouteList.add(RouteNumb);
+                                    Log.e("func<4>列出相同上車站牌的路線:", RouteNumb);
+                                }
+                            }else {
+                                routeOrder.add(i, p.getStops().get(i).getStopName().getZhTw());
+                                Log.e("列出下車站牌", p.getStops().get(i).getStopName().getZhTw());
                             }
                         }
                     }
                 }
-                Log.d("loc", "現在執行結束的函式是= route_order");
             }
-
             @Override
-            public void onFailure(retrofit2.Call<List<BusRouteOrder>> call, Throwable t) {
+            public void onFailure(retrofit2.Call<List<StopOfRoute>> call, Throwable t) {
                 Log.e("OkHttp", "車牌順序的資料連接，怎麼會失敗");
             }
         });
-        Log.d("loc", "現在執行結束的函式是= route_order");
+        Log.d("loc", "現在執行結束的函式是= StopOfRoute");
     }
+
+    //------------------------------------------------------------------------------
+    //在某路公車的站牌序列中，選擇下車地點，利用上下車站牌找都有經過的公車路線
+    //(上車地點為點擊app上公車mark所查到的站牌)(方向確定)//dir="0"表示去程 ; dir="1"表示返程
+    //找出相同上下車地點的公車路線 資料存在 SameDepartureRouteList
+    private void SameDestinationRoute(String RouteNumb, final String dir, final String start, final String end) {
+        Log.e("loc", "現在執行的函式是= SameDestinationRoute");
+        Data = "StopOfRoute";
+        City_a = "Taipei";
+        Query = "?$select=Stops&$top=30&$format=JSON";
+        GetStopOfRoute GetStopOfRoute = AppClientManager.getClient().create(GetStopOfRoute.class);
+        GetStopOfRoute.GetStopOfRoute(Data, City_a, RouteNumb, Query).enqueue(new retrofit2.Callback<List<StopOfRoute>>() {
+            @Override
+            public void onResponse(retrofit2.Call<List<StopOfRoute>> call, retrofit2.Response<List<StopOfRoute>> response) {
+                Log.e("OkHttp", "相同上下車地點的公車路線成功了啦 response = " + response.body().toString());
+                List<StopOfRoute> list = response.body();
+                for (StopOfRoute p : list) {
+                    if (p.getDirection().toString().equals(dir)) {//確定方向
+                        for (int i = 0; i < p.getStops().size(); i++) {
+                            if(p.getStops().get(i).getStopName().getZhTw().equals(end)){
+                                endLat = p.getStops().get(i).getStopPosition().getPositionLat();
+                                endLon = p.getStops().get(i).getStopPosition().getPositionLon();
+                                Log.e("func<1>列出下車站牌的經緯度", p.getStops().get(i).getStopPosition().getPositionLat()+","+p.getStops().get(i).getStopPosition().getPositionLon());
+                            }
+                        }
+                    }
+                }
+                Start=start;
+                Dir=dir;
+                //列出下車站牌有哪些路線的公車
+                RouteOfStation(endLat,endLon,50,1);
+                Log.d("loc", "現在執行結束的函式是= SameDestinationRoute");
+            }
+            @Override
+            public void onFailure(retrofit2.Call<List<StopOfRoute>> call, Throwable t) {
+                Log.e("OkHttp", "相同上下車地點的公車路線的資料連接，怎麼會失敗");
+            }
+        });
+        Log.d("loc", "現在執行結束的函式是= SameDestinationRoute");
+    }
+
+
+
 
 
 

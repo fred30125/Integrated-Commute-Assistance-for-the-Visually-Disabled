@@ -8,58 +8,69 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import com.google.android.gms.maps.model.LatLng;
-
 import java.util.List;
 
-public class RouteAdapter extends RecyclerView.Adapter<RouteAdapter.ViewHolder> {
+
+public class RouteAdapter extends RecyclerView.Adapter<RouteAdapter.ViewHolder>{
     private Context mContext;
+    private OnItemClickListener mOnItemClickListener;
     private List<RouterData> mRouterData;
-    public RouteAdapter(Context context,List<RouterData> mRouterData) {
-        this.mContext = context;
+    //define interface
+    public interface OnItemClickListener {
+        void onItemClick(int position);
+    }
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        mOnItemClickListener = listener;
+    }
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        public TextView description;
+
+        public ViewHolder(View itemView,final OnItemClickListener listener) {
+            super(itemView);
+            description=itemView.findViewById(R.id.description);
+
+
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if(listener!=null){
+                        int position = getAdapterPosition();
+                        if (position != RecyclerView.NO_POSITION) {
+                            listener.onItemClick(position);
+                        }
+                    }
+                }
+            });
+
+        }
+    }
+    public RouteAdapter(List<RouterData> mRouterData) {
         this.mRouterData=mRouterData;
     }
-    @NonNull
+
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int i) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.activity_routecard, parent, false);
-
-
-        return new ViewHolder(view);
-
-
-
+        ViewHolder evh = new ViewHolder(view,mOnItemClickListener);
+        return  evh;
 
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder viewHolder, final int i) {
-        viewHolder.description.setText(mRouterData.get(i).getDescription());
-        viewHolder.cardView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(mContext,mRouterData.get(i).getLatLng()+"",Toast.LENGTH_LONG).show();
 
-            }
-        });
+        RouterData routerData=mRouterData.get(i);
+        viewHolder.description.setText(routerData.getDescription());
+
     }
+
 
     @Override
     public int getItemCount() {
         return mRouterData.size();
     }
 
-    class ViewHolder extends RecyclerView.ViewHolder {
-        public TextView description;
-        public CardView cardView;
 
-        public ViewHolder(View itemView) {
-            super(itemView);
-            description=itemView.findViewById(R.id.description);
-            cardView=itemView.findViewById(R.id.cardView);
-        }
-    }
+
 }

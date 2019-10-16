@@ -1,5 +1,5 @@
 
-package com.example.myapplication.setting.Gson_StopOrder;
+package com.example.myapplication.setting.StopOfRoute;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;

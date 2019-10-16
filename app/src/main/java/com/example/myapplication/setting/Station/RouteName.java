@@ -1,10 +1,10 @@
 
-package com.example.myapplication.setting.Gson_StopOrder;
+package com.example.myapplication.setting.Station;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class OperatorName {
+public class RouteName {
 
     @SerializedName("Zh_tw")
     @Expose

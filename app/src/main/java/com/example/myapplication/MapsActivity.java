@@ -2,12 +2,7 @@ package com.example.myapplication;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.ActionBar;
-import android.app.Activity;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -116,6 +111,8 @@ import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import com.example.myapplication.setting.Station.Station;
+import com.example.myapplication.setting.StopOfRoute.StopOfRoute;
 
 import static com.example.myapplication.Constants.BUS_URL;
 
@@ -211,26 +208,18 @@ public class MapsActivity extends FragmentActivity
     List<String> routeList = new ArrayList<String>();
     List<String> SameDepartureRouteList = new ArrayList<String>();
     List<String> SameDestationRouteList = new ArrayList<String>();
+    List<String> SameStopName = new ArrayList<String>();
     //----------------------------Test Data------------------------------
     String StopName1="金陵女中";
     double endLat;
     double endLon;
+    String StopNameStart;
 
-//    protected void onCreate(Bundle savedInstanceState) {
-//        super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_main);
-//        Button start =findViewById(R.id.start);
-//        start.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                //RouteOfStation(25.04533292,121.4688372,50);
-//                //StopOfRoute("513","0");
-//                //RouteOrder();
-//                //EndStationFindBus(25.04533292,121.4688372,50,"中興街口");
-//                SameDestinationRoute("513","1","中興街口","捷運輔大站");
-//            }
-//        });
-//    }
+    int CARDSTATE=0;
+    final int STATE_BUS_NUM=0;
+    final int STATE_BUS_STOP=1;
+    final int STATE_BUS_SAME=2;
+
 
 
     //--------------筱淇----------------
@@ -241,6 +230,7 @@ public class MapsActivity extends FragmentActivity
     private RouteAdapter routeAdapter;
     private List<RouterData> data_list;
     LatLng routerPoints;
+    String tmpTX;
 
 
     @Override
@@ -513,19 +503,17 @@ public class MapsActivity extends FragmentActivity
                     if (isLoaded) {
                         StopName1=marker.getTitle();
                         //RouteOrder();
-                        Log.e("HELLO 整合",routeList.size()+"");
-//                        getStopDataUtil.setStopName1(marker.getTitle());
-//                        Log.e("HELLO 整合", "路線: " + marker.getTitle());
-//                        getStopDataUtil.RouteOrder(); //太慢
-//
-//                        mGetRouteList=getStopDataUtil.getRouteList(); //讚讚
-//                        Log.e("mGetRouteList",mGetRouteList.size()+"");
-//                        for (int i = 0; i < mGetRouteList.size(); i++) {
-//                            Log.e("HELLO 整合", "路線: " + mGetRouteList.get(i).get("RouteNumb") + "方向: " + mGetRouteList.get(i).get("Direction"));
-//
-//                        }
+                        //Log.e("HELLO 整合",routeList.size()+"");
+                        Log.i("公車站:","LAT:"+marker.getPosition().latitude+"LON:"+marker.getPosition().longitude);
+                        RouteOfStation(marker.getPosition().latitude,marker.getPosition().longitude,50,0); //抓附近公車站的公車號碼
 
-                        showPickerView();
+                        //StopOfRoute("513","0",0);//抓會到的公車站
+
+
+                        //SameDestinationRoute("513","1","中興街口","捷運輔大站");
+
+
+                        //showPickerView();
                     } else {
                         Toast.makeText(MapsActivity.this, "Please waiting until the data is parsed", Toast.LENGTH_SHORT).show();
                         mHandler.sendEmptyMessage(MSG_LOAD_DATA);
@@ -1554,6 +1542,27 @@ public class MapsActivity extends FragmentActivity
                 //返回的分别是三个级别的选中位置
                 String tx = cardItem.get(options1).getPickerViewText();
                 btn_CustomOptions.setText(tx);
+
+                switch (CARDSTATE){
+                    case STATE_BUS_NUM:
+                        tmpTX=tx;
+                        StopOfRoute(tx,"0",0);
+                        //pvCustomOptions.setPicker(cardItem);
+                        break;
+                    case STATE_BUS_STOP:
+                        Log.i("test same","1:"+tmpTX+"name1"+StopNameStart+" name2:"+tx);
+                        SameDestinationRoute(tmpTX,"0",StopNameStart,tx);
+
+
+                        break;
+                    case STATE_BUS_SAME:
+                        Toast.makeText(MapsActivity.this,"成功選擇:"+tx,Toast.LENGTH_LONG).show();
+                        CARDSTATE=STATE_BUS_NUM;
+                        break;
+                    default:
+                        CARDSTATE=STATE_BUS_NUM;
+                        break;
+                }
             }
         })
                 .setLayoutRes(R.layout.pickerview_custom_options, new CustomListener() {
@@ -1573,6 +1582,7 @@ public class MapsActivity extends FragmentActivity
                         ivCancel.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
+                                CARDSTATE=STATE_BUS_NUM;
                                 pvCustomOptions.dismiss();
                             }
                         });
@@ -1678,7 +1688,8 @@ public class MapsActivity extends FragmentActivity
     //這站有哪幾路公車 資料存在 routeList
     //distance:單位是公尺&抓下來DataType=int
     //列德func都填0 func=1:用來下車車站中有哪幾路有到上車車站的將資料存在SameDestationRouteList
-    private  void RouteOfStation(double CenterLat,double CenterLon,int distance,final int func){
+    public  void RouteOfStation(double CenterLat,double CenterLon,int distance,final int func){
+        routeList=new ArrayList<>();
         Log.e("loc", "現在執行的函式是= RouteOfStation");
         Data = "Station";
         City_a = "Taipei";
@@ -1696,8 +1707,13 @@ public class MapsActivity extends FragmentActivity
                 List<Station> list = response.body();
                 if(func==1){
                     SameDestationRouteList.clear();
+                    SameStopName.clear();
                 }
                 for (Station p : list) {
+                    StopNameStart=p.getStops().get(0).getStopName().getZhTw();
+                    //for(int i=0;i<10;i++){
+                    //    StopNameStart=p.getStops().get(i).getStopName().getZhTw();
+                    //}
                     for (int i = 0; i < p.getStops().size(); i++) {
                         if(func==1){
                             SameDestationRouteList.add(p.getStops().get(i).getRouteName().getZhTw());
@@ -1714,10 +1730,14 @@ public class MapsActivity extends FragmentActivity
                         }
                     }
                 }
+                setBusCard(routeList);
+                pvCustomOptions.setPicker(cardItem);
+                pvCustomOptions.show();
             }
             @Override
             public void onFailure(retrofit2.Call<List<Station>> call, Throwable t) {
                 Log.e("OkHttp", "車站的路線載入，怎麼會失敗");
+                CARDSTATE=STATE_BUS_NUM;
             }
         });
     }
@@ -1728,7 +1748,9 @@ public class MapsActivity extends FragmentActivity
     //這路公車往?方向的站序資料//dir="0"表示去程 ; dir="1"表示返程
     //ex RouteNumb=1211
     //列德func都填0 func=1:用來看下車車站中的路線那些有經過上車車站
-    private  void StopOfRoute(final String RouteNumb, final String dir, final int func){
+    public  void StopOfRoute(final String RouteNumb, final String dir, final int func){
+
+        routeOrder=new ArrayList<>();
         Log.e("loc", "現在執行的函式是= StopOfRoute");
         Data = "StopOfRoute";
         City_a = "Taipei";
@@ -1740,9 +1762,13 @@ public class MapsActivity extends FragmentActivity
                 Log.e("OkHttp", "車牌順序成功了啦 response = " + response.body().toString());
                 List<StopOfRoute> list = response.body();
                 for (StopOfRoute p : list) {
+                    Log.e("func<!1>列出相同上車站牌的路線:", RouteNumb);
                     if (p.getDirection().toString().equals(dir)) {//確定方向
+                        Log.e("func<!2>列出相同上車站牌的路線:", RouteNumb);
                         for (int i = 0; i < p.getStops().size(); i++) {
                             if(func==1){
+                                Log.e("func<!3>列出相同上車站牌的路線:", RouteNumb);
+                                Log.e("func testname ",i+":"+p.getStops().get(i).getStopName().getZhTw()+",  "+Start);
                                 if(p.getStops().get(i).getStopName().getZhTw().equals(Start)){
                                     SameDepartureRouteList.add(RouteNumb);
                                     Log.e("func<4>列出相同上車站牌的路線:", RouteNumb);
@@ -1754,10 +1780,24 @@ public class MapsActivity extends FragmentActivity
                         }
                     }
                 }
+                if (func == 1) {
+                    CARDSTATE=STATE_BUS_SAME;
+                    setBusCard(SameDepartureRouteList);
+                    pvCustomOptions.setPicker(cardItem);
+                    pvCustomOptions.show();
+                }else{
+                    CARDSTATE=STATE_BUS_STOP;
+                    setBusCard(routeOrder);
+                    pvCustomOptions.setPicker(cardItem);
+                    pvCustomOptions.show();
+                }
+
+
             }
             @Override
             public void onFailure(retrofit2.Call<List<StopOfRoute>> call, Throwable t) {
                 Log.e("OkHttp", "車牌順序的資料連接，怎麼會失敗");
+                CARDSTATE=STATE_BUS_NUM;
             }
         });
         Log.d("loc", "現在執行結束的函式是= StopOfRoute");
@@ -1767,7 +1807,8 @@ public class MapsActivity extends FragmentActivity
     //在某路公車的站牌序列中，選擇下車地點，利用上下車站牌找都有經過的公車路線
     //(上車地點為點擊app上公車mark所查到的站牌)(方向確定)//dir="0"表示去程 ; dir="1"表示返程
     //找出相同上下車地點的公車路線 資料存在 SameDepartureRouteList
-    private void SameDestinationRoute(String RouteNumb, final String dir, final String start, final String end) {
+    public void SameDestinationRoute(String RouteNumb, final String dir, final String start, final String end) {
+        SameDepartureRouteList=new ArrayList<>();
         Log.e("loc", "現在執行的函式是= SameDestinationRoute");
         Data = "StopOfRoute";
         City_a = "Taipei";
@@ -1790,6 +1831,7 @@ public class MapsActivity extends FragmentActivity
                     }
                 }
                 Start=start;
+                Log.i("func start",start);
                 Dir=dir;
                 //列出下車站牌有哪些路線的公車
                 RouteOfStation(endLat,endLon,50,1);
@@ -1803,6 +1845,37 @@ public class MapsActivity extends FragmentActivity
         Log.d("loc", "現在執行結束的函式是= SameDestinationRoute");
     }
 
+
+    public void setBusCard(List<String> busArrayList){
+        cardItem.clear();
+        if(busArrayList!=null){
+            for (int i = 0; i < busArrayList.size(); i++) {
+                Log.i("cardRouter",i+" "+busArrayList.get(i));
+                cardItem.add(new CardBean(i, busArrayList.get(i)));
+            }
+
+            for (int i = 0; i < cardItem.size(); i++) {
+                if (cardItem.get(i).getCardNo().length() > 6) {
+                    String str_item = cardItem.get(i).getCardNo();
+                    cardItem.get(i).setCardNo(str_item);
+                }
+            }
+        }
+
+    }
+
+
+
+
+    //recycle adapter func
+    public void insertItem(int position,RouterData routerData) {
+        data_list.add(position,routerData);
+        routeAdapter.notifyItemInserted(position);
+    }
+    public void removeItem(int position) {
+        data_list.remove(position);
+        routeAdapter.notifyItemRemoved(position);
+    }
 
 
 

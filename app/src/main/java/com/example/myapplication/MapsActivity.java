@@ -215,10 +215,15 @@ public class MapsActivity extends FragmentActivity
     double endLon;
     String StopNameStart;
 
+    LatLng endLatLng;
+    LatLng startLatLng;
+
     int CARDSTATE=0;
     final int STATE_BUS_NUM=0;
     final int STATE_BUS_STOP=1;
     final int STATE_BUS_SAME=2;
+
+
 
 
 
@@ -506,6 +511,7 @@ public class MapsActivity extends FragmentActivity
                         //Log.e("HELLO 整合",routeList.size()+"");
                         Log.i("公車站:","LAT:"+marker.getPosition().latitude+"LON:"+marker.getPosition().longitude);
                         RouteOfStation(marker.getPosition().latitude,marker.getPosition().longitude,50,0); //抓附近公車站的公車號碼
+                        startLatLng=new LatLng(marker.getPosition().latitude,marker.getPosition().longitude);
 
                         //StopOfRoute("513","0",0);//抓會到的公車站
 
@@ -928,7 +934,33 @@ public class MapsActivity extends FragmentActivity
 
                             html_ins=insArray.getJSONObject(j).getString("html_instructions");
                             Log.i("html測試", Html.fromHtml(html_ins).toString());
-                            sethtmlTxt(Html.fromHtml(html_ins).toString(),tmpLatLng);
+                            if(points_state.get(i)!=2){
+                                sethtmlTxt(Html.fromHtml(html_ins).toString(),tmpLatLng);
+                            }else if(points_state.get(i)==2 && j==0){
+                                final int tmp_i_num=i;
+
+                                runOnUiThread(new Runnable() {
+                                    public void run() {
+                                        // txtRouter.append(str+"\n");
+                                        RouterData data = new RouterData();
+                                        data.setDescription("抵達公車上車車站");
+                                        data.setLatLng(points.get(tmp_i_num-1));
+                                        Log.i("adapter",data.getDescription());
+                                        data_list.add(data);
+
+
+
+
+                                        data = new RouterData();
+                                        data.setDescription("這是公車下車站");
+                                        data.setLatLng(points.get(tmp_i_num));
+                                        Log.i("adapter",data.getDescription());
+                                        data_list.add(data);
+                                        routeAdapter.notifyDataSetChanged();
+                                    }
+                                });
+                            }
+
 
                             JSONObject tmp;
                             tmp=insArray.getJSONObject(j);
@@ -1015,8 +1047,6 @@ public class MapsActivity extends FragmentActivity
         }
         return poly;
     }
-
-
     private void drawAll() {
         if (mMap != null) {
             runOnUiThread(new Runnable() {
@@ -1104,7 +1134,6 @@ public class MapsActivity extends FragmentActivity
         double bwd=(dy/A.Ec+A.m_RadLa)*180./Math.PI;
         return new MyLatLng(bjd, bwd);
     }
-
     public  static double getAngle(MyLatLng A,MyLatLng B){
         double dx=(B.m_RadLo-A.m_RadLo)*A.Ed;
         double dy=(B.m_RadLa-A.m_RadLa)*A.Ec;
@@ -1557,6 +1586,14 @@ public class MapsActivity extends FragmentActivity
                         break;
                     case STATE_BUS_SAME:
                         Toast.makeText(MapsActivity.this,"成功選擇:"+tx,Toast.LENGTH_LONG).show();
+                        endLatLng=new LatLng(endLat,endLon);
+                        //-------------------新增marker--------------
+                        points.add(startLatLng);
+                        points_state.add(1);
+                        points.add(endLatLng);
+                        points_state.add(2);
+                        getDirection(currentLocation,points.get(points.size()-1));
+                        //--------------------
                         CARDSTATE=STATE_BUS_NUM;
                         break;
                     default:
@@ -1716,6 +1753,7 @@ public class MapsActivity extends FragmentActivity
                     //}
                     for (int i = 0; i < p.getStops().size(); i++) {
                         if(func==1){
+
                             SameDestationRouteList.add(p.getStops().get(i).getRouteName().getZhTw());
                             Log.e("func<2>下車站牌的全部路線:",p.getStops().get(i).getRouteName().getZhTw());
                         }else{

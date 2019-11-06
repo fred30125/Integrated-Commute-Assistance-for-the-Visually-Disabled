@@ -12,11 +12,10 @@ import android.hardware.Sensor;
 
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
-import android.hardware.SensorListener;
 import android.hardware.SensorManager;
 import android.location.Location;
 
-import android.net.Uri;
+
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -24,26 +23,14 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
-import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.RotateAnimation;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -53,21 +40,19 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.bigkoo.pickerview.builder.OptionsPickerBuilder;
-import com.bigkoo.pickerview.builder.TimePickerBuilder;
 import com.bigkoo.pickerview.listener.CustomListener;
 import com.bigkoo.pickerview.listener.OnOptionsSelectListener;
-import com.bigkoo.pickerview.listener.OnTimeSelectListener;
 import com.bigkoo.pickerview.view.OptionsPickerView;
-import com.bigkoo.pickerview.view.TimePickerView;
-import com.bumptech.glide.Glide;
+import com.example.myapplication.setting.EstimateTime.EsimateTime;
+import com.example.myapplication.setting.GetEstimateTime;
+import com.example.myapplication.setting.RealTimeNearStop.RealTimeNearStop;
 import com.example.myapplication.bean.CardBean;
 import com.example.myapplication.bean.JsonBean;
-import com.example.myapplication.common.logger.LogWrapper;
-import com.example.myapplication.common.logger.MessageOnlyLogFilter;
 import com.example.myapplication.setting.AppClientManager;
 import com.example.myapplication.setting.GetStation;
 import com.example.myapplication.setting.GetStopOfRoute;
 import com.example.myapplication.setting.Station.Station;
+import com.example.myapplication.setting.GetRealTimeNearStop;
 import com.example.myapplication.setting.StopOfRoute.StopOfRoute;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -111,8 +96,7 @@ import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import com.example.myapplication.setting.Station.Station;
-import com.example.myapplication.setting.StopOfRoute.StopOfRoute;
+
 
 import static com.example.myapplication.Constants.BUS_URL;
 
@@ -203,6 +187,7 @@ public class MapsActivity extends FragmentActivity
     String Query="";
     String Start="";
     String Dir="";
+    String Route="";
     //LinkedList<HashMap<String, String>> routeList = new LinkedList<>();
     List<String> routeOrder = new ArrayList<String>();
     List<String> routeList = new ArrayList<String>();
@@ -222,6 +207,19 @@ public class MapsActivity extends FragmentActivity
     final int STATE_BUS_NUM=0;
     final int STATE_BUS_STOP=1;
     final int STATE_BUS_SAME=2;
+    final int STATE_DOWNLOAD=3;
+
+
+
+    //--------------bus arrival time----------
+    List<String> routeIDList = new ArrayList<String>();
+    private LinkedList<HashMap<String,String>> EstimatedTimeList=new LinkedList<>();
+    String StopNamehex="";
+    int StopName1Squence;
+    List<String> testlist;
+
+
+    //--------------reservation--------------
 
 
 
@@ -297,7 +295,7 @@ public class MapsActivity extends FragmentActivity
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         data_list=new ArrayList<>();
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.setHasFixedSize(true);
+        //recyclerView.setHasFixedSize(true);
         routeAdapter=new RouteAdapter(data_list);
         recyclerView.setAdapter(routeAdapter);
 
@@ -333,6 +331,7 @@ public class MapsActivity extends FragmentActivity
             @Override
             public void onClick(View v) {
                 getCardData();
+                CARDSTATE=STATE_DOWNLOAD;
                 pvCustomOptions.setPicker(cardItem);
                 pvCustomOptions.show();
             }
@@ -358,19 +357,6 @@ public class MapsActivity extends FragmentActivity
                     nowPoint[2]=0;
                 }*/
     //test~~~~~~~~~~~~~~~~~
-                new Thread(new Runnable() {
-                    public void run() {
-                        //RouteOrder();
-                        Log.e("HELLO 整合",routeList.size()+"");
-                        //這邊是背景thread在運作, 這邊可以處理比較長時間或大量的運算
-
-                       /* ((Activity) mContext).runOnUiThread(new Runnable() {
-                            public void run() {
-                                //這邊是呼叫main thread handler幫我們處理UI部分
-                            }
-                        });*/
-                    }
-                }).start();
 
 
 
@@ -490,6 +476,21 @@ public class MapsActivity extends FragmentActivity
 
 
 
+        //---------------筱淇 bus------------------
+        testlist =new ArrayList<String>();
+        testlist.add("513");//<---放路線中可以到的公車路線
+
+        //sample code
+//        StopNamehex=encode(StopName1);//先編碼
+//        //testlist上車號碼的list
+//        for(int i =0;i<testlist.size();i++) {
+//            Route=testlist.get(i);
+//            EstimateTime(StopNamehex,"1");
+//        }
+
+        //sample some
+
+
     }
     //地圖creat好的時候執行
     @Override
@@ -504,12 +505,13 @@ public class MapsActivity extends FragmentActivity
             }
             @Override
             public View getInfoContents(Marker marker) {
-                if(marker.getSnippet().equals("bus")){
+                if(marker.getSnippet().equals("bus")){          //點公車
                     if (isLoaded) {
+                        CARDSTATE=STATE_BUS_NUM;
                         StopName1=marker.getTitle();
                         //RouteOrder();
                         //Log.e("HELLO 整合",routeList.size()+"");
-                        Log.i("公車站:","LAT:"+marker.getPosition().latitude+"LON:"+marker.getPosition().longitude);
+
                         RouteOfStation(marker.getPosition().latitude,marker.getPosition().longitude,50,0); //抓附近公車站的公車號碼
                         startLatLng=new LatLng(marker.getPosition().latitude,marker.getPosition().longitude);
 
@@ -750,6 +752,9 @@ public class MapsActivity extends FragmentActivity
     public void onInputSent(CharSequence input) {
         //bluetoothChatFragment.updateMessage("123");
     }
+
+
+    //----------取得公車資料---------
     public void requestBusStation(){
         busDataArrayList=new ArrayList<>();
         StringBuilder busStationURL=new StringBuilder(BUS_URL);
@@ -934,9 +939,9 @@ public class MapsActivity extends FragmentActivity
 
                             html_ins=insArray.getJSONObject(j).getString("html_instructions");
                             Log.i("html測試", Html.fromHtml(html_ins).toString());
-                            if(points_state.get(i)!=2){
+                            if(points_state.get(i)!=2){//不等於公車
                                 sethtmlTxt(Html.fromHtml(html_ins).toString(),tmpLatLng);
-                            }else if(points_state.get(i)==2 && j==0){
+                            }else if(points_state.get(i)==2 && j==0){ //假如等於公車、只做一次
                                 final int tmp_i_num=i;
 
                                 runOnUiThread(new Runnable() {
@@ -1047,6 +1052,31 @@ public class MapsActivity extends FragmentActivity
         }
         return poly;
     }
+    //依照交通部轉換格式，把字串轉成16進位
+    private String encode(String str){
+        //根據預設編碼獲取位元組陣列
+        String hexString="0123456789ABCDEF";
+        byte[] bytes=str.getBytes();
+        StringBuilder sb=new StringBuilder(bytes.length*2);
+        //將位元組陣列中每個位元組拆解成2位16進位制整數
+        for(int i=0;i<bytes.length;i++){
+            sb.append("%");
+            sb.append(hexString.charAt((bytes[i]&0xf0)>>4));
+            sb.append(hexString.charAt((bytes[i]&0x0f)>>0));
+        }
+        Log.e("encode",sb.toString());
+        //%E6%8D%B7%E9%81%8B%E8%A5%BF%E9%96%80%E7%AB%99
+        return sb.toString();
+    }
+
+
+
+
+
+
+
+
+
     private void drawAll() {
         if (mMap != null) {
             runOnUiThread(new Runnable() {
@@ -1099,7 +1129,7 @@ public class MapsActivity extends FragmentActivity
                     if(arraySteps!=null){
                         for(int i=0;i<arraySteps.size();i++){
                             Log.i("arraytest",i+"");
-                            if(points_state.get(i)==1){
+                            if(points_state.get(i)==1){ //一般路徑
                                 for(int j=0;j<arraySteps.get(i).size();j++){
                                     Log.i("arraytest",arraySteps.get(i).get(j)+"");
                                     drawPath(arraySteps.get(i).get(j));
@@ -1280,9 +1310,26 @@ public class MapsActivity extends FragmentActivity
             protected Map<String, String> getParams() throws AuthFailureError {
                 Map<String, String> Map = new HashMap<String, String>();
                 //Map.put("router", jsonObjectToServer.toString());
-                if(objFile!=null){
+
+                JSONArray arrfile=new JSONArray();
+
+                for(int i=0;i<data_list.size();i++){
+                    JSONObject jsonObject1=new JSONObject();
+                    try{
+                        jsonObject1.put("lat",data_list.get(i).getLatLng().latitude);
+                        jsonObject1.put("lon",data_list.get(i).getLatLng().longitude);
+                        jsonObject1.put("des",data_list.get(i).getDescription());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    arrfile.put(jsonObject1);
+                }
+
+
+                if(objFile!=null&&data_list!=null){
                     try {
                         objFile.put("point_state",points_state);
+                        objFile.put("data_list",arrfile);
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -1383,6 +1430,25 @@ public class MapsActivity extends FragmentActivity
                             LatLng latLng=new LatLng(jsonObject3.getDouble("Lat"),jsonObject3.getDouble("Lon"));
                             points.add(latLng);
                         }
+
+
+                        data_list.clear(); ;
+
+
+                        JSONArray jsonArray_datalist=new JSONArray();
+                        jsonArray_datalist=jsonObject.getJSONArray("data_list");
+                        for(int i=0;i<jsonArray_datalist.length();i++){
+                            JSONObject jsonObject3=jsonArray_datalist.getJSONObject(i);
+                            LatLng latLng=new LatLng(jsonObject3.getDouble("lat"),jsonObject3.getDouble("lon"));
+                            String des=jsonObject3.getString("des");
+
+                            RouterData data = new RouterData();
+                            data.setDescription(des);
+                            data.setLatLng(latLng);
+
+                            data_list.add(data);
+                        }
+                        routeAdapter.notifyDataSetChanged();
                         drawAll();
 
 
@@ -1570,7 +1636,10 @@ public class MapsActivity extends FragmentActivity
             public void onOptionsSelect(int options1, int option2, int options3, View v) {
                 //返回的分别是三个级别的选中位置
                 String tx = cardItem.get(options1).getPickerViewText();
-                btn_CustomOptions.setText(tx);
+                if(CARDSTATE==STATE_DOWNLOAD){
+                    btn_CustomOptions.setText(tx);
+                }
+
 
                 switch (CARDSTATE){
                     case STATE_BUS_NUM:
@@ -1581,20 +1650,28 @@ public class MapsActivity extends FragmentActivity
                     case STATE_BUS_STOP:
                         Log.i("test same","1:"+tmpTX+"name1"+StopNameStart+" name2:"+tx);
                         SameDestinationRoute(tmpTX,"0",StopNameStart,tx);
-
-
                         break;
                     case STATE_BUS_SAME:
                         Toast.makeText(MapsActivity.this,"成功選擇:"+tx,Toast.LENGTH_LONG).show();
                         endLatLng=new LatLng(endLat,endLon);
                         //-------------------新增marker--------------
-                        points.add(startLatLng);
-                        points_state.add(1);
-                        points.add(endLatLng);
-                        points_state.add(2);
+                        if(points_state.get(points_state.size()-1)==2){
+                            points.add(startLatLng);
+                            points_state.add(2);
+                            points.add(endLatLng);
+                            points_state.add(2);
+                        }else{
+                            points.add(startLatLng);
+                            points_state.add(1);
+                            points.add(endLatLng);
+                            points_state.add(2);
+                        }
                         getDirection(currentLocation,points.get(points.size()-1));
                         //--------------------
                         CARDSTATE=STATE_BUS_NUM;
+                        break;
+                    case STATE_DOWNLOAD:
+                        tmpTX=tx;
                         break;
                     default:
                         CARDSTATE=STATE_BUS_NUM;
@@ -1785,7 +1862,9 @@ public class MapsActivity extends FragmentActivity
     //站序資料存在routeOrder
     //這路公車往?方向的站序資料//dir="0"表示去程 ; dir="1"表示返程
     //ex RouteNumb=1211
-    //列德func都填0 func=1:用來看下車車站中的路線那些有經過上車車站
+    //列德func都填0
+    // func=1:用來看下車車站中的路線那些有經過上車車站
+    // func=2:用來查詢stopsequence
     public  void StopOfRoute(final String RouteNumb, final String dir, final int func){
 
         routeOrder=new ArrayList<>();
@@ -1810,6 +1889,12 @@ public class MapsActivity extends FragmentActivity
                                 if(p.getStops().get(i).getStopName().getZhTw().equals(Start)){
                                     SameDepartureRouteList.add(RouteNumb);
                                     Log.e("func<4>列出相同上車站牌的路線:", RouteNumb);
+                                }
+                            }else if(func==2){
+                                if (p.getStops().get(i).getStopName().getZhTw().equals(StopName1)){
+                                    StopName1Squence=p.getStops().get(i).getStopSequence();
+                                    Log.e("這臺公車的stop sequence", StopName1Squence+"");
+                                    Resevation(dir);
                                 }
                             }else {
                                 routeOrder.add(i, p.getStops().get(i).getStopName().getZhTw());
@@ -1901,6 +1986,108 @@ public class MapsActivity extends FragmentActivity
         }
 
     }
+
+    //------------------------------------------------------------------------------
+    //填入上車站牌(DespatureStop),填上方向(dir)//dir="0"表示去程 ; dir="1"表示返程
+    //找出公車預估到站時間
+    private void EstimateTime(final String DespatureStop,final String dir) {
+        Log.e("loc", "現在執行的函式是= EstimateTime");
+        Data = "EstimatedTimeOfArrival";
+        City_a = "Taipei";
+        Query = "?$select=EstimateTime&$filter=StopName%2FZh_tw%20eq%20%27"+DespatureStop+"%27%20and%20Direction%20eq%20'"+dir+"'&$format=JSON";
+        Log.e("Query", Query);
+        Log.d("Route", "路線:"+Route);
+
+        GetEstimateTime GetEstimateTime = AppClientManager.getClient().create(GetEstimateTime.class);
+        GetEstimateTime.GetEstimateTime(Data, City_a, Route, Query).enqueue(new retrofit2.Callback<List<EsimateTime>>() {
+            @Override
+            public void onResponse(retrofit2.Call<List<EsimateTime>> call, retrofit2.Response<List<EsimateTime>> response) {
+                Log.e("OkHttp", "這條線路的公車還有多久到這一站 response = " + response.body().toString());
+                List<EsimateTime> list = response.body();
+                HashMap<String,String> EstimatedTime = new HashMap<>();
+
+                if (!list.isEmpty()) {
+                    for (EsimateTime p : list) {
+                        EstimatedTime.put("route",Route);
+                        int min;
+                        String mins;
+                        if (p.getEstimateTime() != null) {
+                            min = p.getEstimateTime() / 60;
+                            mins = min + "分";
+                            Log.e("time",mins);
+                            EstimatedTime.put("time",min+"");
+                        } else {
+                            //Log.e("time","未發車");
+                            EstimatedTime.put("time",0+"");
+                        }
+                        EstimatedTimeList.add(EstimatedTime);
+                    }
+                }
+                theFastBus(dir);
+            }
+            @Override
+            public void onFailure(retrofit2.Call<List<EsimateTime>> call, Throwable t) {
+                Log.e("OkHttp", "目前哪一台公車最快來的資料連接，怎麼會失敗");
+            }
+        });
+        Log.d("loc", "現在執行結束的函式是= EstimateTime");
+
+    }
+    //------------------------------------------------------------------------------
+    //用來找出哪一台公車最快來
+    private void theFastBus(final String dir){
+        int theFastBus=0;
+        int time;
+        Log.e("size",EstimatedTimeList.size()+"");
+        if(EstimatedTimeList.size()!=0) {
+            for (int i = 1; i < EstimatedTimeList.size(); i++) {
+                Log.e("EstimatedTimeList", EstimatedTimeList.get(i).get("route"));
+                time = Integer.parseInt(EstimatedTimeList.get(i).get("time"));
+                if (time < Integer.parseInt(EstimatedTimeList.get(theFastBus).get("time"))) {
+                    theFastBus = i;
+                }
+            }
+            Route = EstimatedTimeList.get(theFastBus).get("route");
+            Log.e("最快到站的公車是", EstimatedTimeList.get(theFastBus).get("route"));
+            Log.e("再幾分鐘來", EstimatedTimeList.get(theFastBus).get("time"));
+
+            StopOfRoute(EstimatedTimeList.get(theFastBus).get("route"), dir, 2);//找出StopName1Squence
+        }
+    }
+    //------------------------------------------------------------------------------
+    //用來預約公車司機
+
+    private void Resevation(final String dir){
+        Log.e("loc", "現在執行的函式是= RealTimeNearStop");
+        Data = "RealTimeNearStop";
+        City_a = "Taipei";
+        Query = "?$filter=Direction%20eq%20'"+dir+"'&$orderby=StopSequence%20%20asc&$top=30&$format=JSON";
+        Log.e("Query", Query);
+
+        GetRealTimeNearStop GetRealTimeNearStop = AppClientManager.getClient().create(GetRealTimeNearStop.class);
+        GetRealTimeNearStop.GetRealTimeNearStop(Data, City_a, Route, Query).enqueue(new retrofit2.Callback<List<RealTimeNearStop>>() {
+            @Override
+            public void onResponse(retrofit2.Call<List<RealTimeNearStop>> call, retrofit2.Response<List<RealTimeNearStop>> response) {
+                Log.e("OkHttp", "RealTimeNearStop response = " + response.body().toString());
+                List<RealTimeNearStop> list = response.body();
+                String theclostBus="";
+                if (!list.isEmpty()) {
+                    for (RealTimeNearStop p : list) {
+                        if(p.getStopSequence()<StopName1Squence){
+                            theclostBus=p.getPlateNumb();
+                        }
+                    }
+                }
+                Log.e("theclostBus",theclostBus);
+            }
+            @Override
+            public void onFailure(retrofit2.Call<List<RealTimeNearStop>> call, Throwable t) {
+                Log.e("OkHttp", "目前哪一台公車最快來的資料連接，怎麼會失敗");
+            }
+        });
+        Log.d("loc", "現在執行結束的函式是= RealTimeNearStop");
+    }
+    //-----------------------------------------------------
 
 
 

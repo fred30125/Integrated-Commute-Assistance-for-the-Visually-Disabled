@@ -1894,6 +1894,8 @@ public class MapsActivity extends FragmentActivity
                                 if (p.getStops().get(i).getStopName().getZhTw().equals(StopName1)){
                                     StopName1Squence=p.getStops().get(i).getStopSequence();
                                     Log.e("這臺公車的stop sequence", StopName1Squence+"");
+
+                                    //---------------判斷預約--------------------
                                     Resevation(dir);
                                 }
                             }else {
@@ -1990,7 +1992,7 @@ public class MapsActivity extends FragmentActivity
     //------------------------------------------------------------------------------
     //填入上車站牌(DespatureStop),填上方向(dir)//dir="0"表示去程 ; dir="1"表示返程
     //找出公車預估到站時間
-    private void EstimateTime(final String DespatureStop,final String dir) {
+    private void EstimateTime(final String DespatureStop,final String dir) {//Des : XX站   dir : 方向 0.1
         Log.e("loc", "現在執行的函式是= EstimateTime");
         Data = "EstimatedTimeOfArrival";
         City_a = "Taipei";
@@ -2020,7 +2022,7 @@ public class MapsActivity extends FragmentActivity
                             //Log.e("time","未發車");
                             EstimatedTime.put("time",0+"");
                         }
-                        EstimatedTimeList.add(EstimatedTime);
+                        EstimatedTimeList.add(EstimatedTime); //key:公車號碼
                     }
                 }
                 theFastBus(dir);
@@ -2079,6 +2081,11 @@ public class MapsActivity extends FragmentActivity
                     }
                 }
                 Log.e("theclostBus",theclostBus);
+
+                //--------------VVVVVVVVVVVVVVVVVVV----------------
+                //做上傳預約資訊動作 theclostBus->公車車牌
+
+
             }
             @Override
             public void onFailure(retrofit2.Call<List<RealTimeNearStop>> call, Throwable t) {

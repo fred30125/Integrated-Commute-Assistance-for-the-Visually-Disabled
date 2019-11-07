@@ -38,6 +38,8 @@ import java.util.Map;
 public class MenuActivity extends Activity {
     Button btnBluetooth;
     Button btnMap;
+    Button btnFinalMain;
+
     Button sign_out;
     GoogleSignInClient mGoogleSignInClient;
     TextView textView_name;
@@ -57,6 +59,7 @@ public class MenuActivity extends Activity {
         setContentView(R.layout.activity_menu);
         btnBluetooth=findViewById(R.id.select_bluetooth);
         btnMap=findViewById(R.id.select_map);
+        btnFinalMain=findViewById(R.id.select_final_main);
         sign_out = findViewById(R.id.log_out);
         textView_name=findViewById(R.id.textView_name);
         textView_mail=findViewById(R.id.textView_mail);
@@ -113,6 +116,14 @@ public class MenuActivity extends Activity {
             public void onClick(View v) {
                 Intent intent = new Intent();
                 intent.setClass(MenuActivity.this,MapsActivity.class);
+                startActivity(intent);
+            }
+        });
+        btnFinalMain.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.setClass(MenuActivity.this,FinalMainActivity.class);
                 startActivity(intent);
             }
         });

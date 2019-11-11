@@ -6,6 +6,7 @@ apply plugin: 'com.github.dcendents.android-maven'
 
 android {
     compileSdkVersion 26
+    useLibrary 'org.apache.http.legacy'
 
     defaultConfig {
         minSdkVersion 14
@@ -23,6 +24,7 @@ android {
         abortOnError false
     }
 }
+
 
 //allprojects {
 //    tasks.withType(Javadoc) {//兼容中文字符

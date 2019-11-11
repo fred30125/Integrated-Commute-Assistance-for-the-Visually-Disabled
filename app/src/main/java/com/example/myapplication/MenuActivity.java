@@ -39,6 +39,7 @@ public class MenuActivity extends Activity {
     Button btnBluetooth;
     Button btnMap;
     Button btnFinalMain;
+    Button btnTest;
 
     Button sign_out;
     GoogleSignInClient mGoogleSignInClient;
@@ -60,6 +61,7 @@ public class MenuActivity extends Activity {
         btnBluetooth=findViewById(R.id.select_bluetooth);
         btnMap=findViewById(R.id.select_map);
         btnFinalMain=findViewById(R.id.select_final_main);
+        btnTest=findViewById(R.id.select_test_menu);
         sign_out = findViewById(R.id.log_out);
         textView_name=findViewById(R.id.textView_name);
         textView_mail=findViewById(R.id.textView_mail);
@@ -124,6 +126,14 @@ public class MenuActivity extends Activity {
             public void onClick(View v) {
                 Intent intent = new Intent();
                 intent.setClass(MenuActivity.this,FinalMainActivity.class);
+                startActivity(intent);
+            }
+        });
+        btnTest.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.setClass(MenuActivity.this,ConvertUtil.class);
                 startActivity(intent);
             }
         });

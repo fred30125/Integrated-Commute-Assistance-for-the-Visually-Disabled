@@ -30,6 +30,12 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="測試主頁面" />
+        <Button
+            android:id="@+id/select_test_menu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="測試功能頁" />
 
 
     </LinearLayout>

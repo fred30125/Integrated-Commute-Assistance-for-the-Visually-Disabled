@@ -141,6 +141,7 @@ public class FinalSetRouterActivity extends FragmentActivity
     //------------direction---------------
     int[] nowPoint;
 
+
     //------------upload to server --> made by jsonobject--------------
     JSONObject jsonObjectToServer;
     private RequestQueue requestQueue;
@@ -203,6 +204,7 @@ public class FinalSetRouterActivity extends FragmentActivity
     private LinkedList<HashMap<String, String>> EstimatedTimeList = new LinkedList<>();
     String StopNamehex = "";
     int StopName1Squence;
+    String busStopstart;
     //--------------reservation--------------
     //--------------筱淇----------------
     //-------------recycle------------
@@ -473,7 +475,7 @@ public class FinalSetRouterActivity extends FragmentActivity
         if (points.size() > 0) {
             MapsActivity.MyLatLng tmp = new MapsActivity.MyLatLng(points.get(0).longitude, points.get(0).latitude);
             MapsActivity.MyLatLng current = new MapsActivity.MyLatLng(firstLocation.longitude, firstLocation.latitude);
-            getDistance(firstLocation, points.get(0));
+            //getDistance(firstLocation, points.get(0));
             //Toast.makeText(this, turnTo(current, tmp), Toast.LENGTH_SHORT).show();
         }
         //router_action();
@@ -1627,6 +1629,7 @@ public class FinalSetRouterActivity extends FragmentActivity
                 //返回的分别是三个级别的选中位置
                 String tx = cardItem.get(options1).getPickerViewText();
                 if (CARDSTATE == STATE_DOWNLOAD) {
+
                     //btn_CustomOptions.setText(tx);
                 }
 
@@ -1639,6 +1642,9 @@ public class FinalSetRouterActivity extends FragmentActivity
                         break;
                     case STATE_BUS_STOP:
                         Log.i("test same", "1:" + tmpTX + "name1" + StopNameStart + " name2:" + tx);
+                        endLatLng = new LatLng(endLat, endLon);
+                        busStopstart=StopNameStart;
+                        //vv-----------測試--------------------------
                         SameDestinationRoute(tmpTX, "0", StopNameStart, tx);
                         break;
                     case STATE_BUS_SAME:
@@ -1652,7 +1658,7 @@ public class FinalSetRouterActivity extends FragmentActivity
                             points_state.add(2);
 
                             MarkerOptions tmpMarker = new MarkerOptions()
-                                    .title(StopNameStart +"_"+tx)
+                                    .title(busStopstart +"_"+tx)
                                     .snippet("bus_stop")
                                     .position(startLatLng)
                                     .draggable(false)
@@ -1660,7 +1666,7 @@ public class FinalSetRouterActivity extends FragmentActivity
                             mMap.addMarker(tmpMarker);
                             busMarkerArrayList.add(tmpMarker);
                             tmpMarker = new MarkerOptions()
-                                    .title(tmpTX+"_"+tx)
+                                    .title(StopNameStart+"_"+tx)
                                     .snippet("bus_stop")
                                     .position(endLatLng)
                                     .draggable(false)
@@ -1674,7 +1680,7 @@ public class FinalSetRouterActivity extends FragmentActivity
                             points_state.add(2);
 
                             MarkerOptions tmpMarker = new MarkerOptions()
-                                    .title(StopNameStart +"_"+tx)
+                                    .title(busStopstart +"_"+tx)
                                     .snippet("bus_stop")
                                     .position(startLatLng)
                                     .draggable(false)
@@ -1682,7 +1688,7 @@ public class FinalSetRouterActivity extends FragmentActivity
                             mMap.addMarker(tmpMarker);
                             busMarkerArrayList.add(tmpMarker);
                             tmpMarker = new MarkerOptions()
-                                    .title(tmpTX +"_"+tx)
+                                    .title(StopNameStart +"_"+tx)
                                     .snippet("bus_stop")
                                     .position(endLatLng)
                                     .draggable(false)
@@ -1790,5 +1796,40 @@ public class FinalSetRouterActivity extends FragmentActivity
         Bitmap imageBitmap = BitmapFactory.decodeResource(getResources(),getResources().getIdentifier(iconName, "drawable", getPackageName()));
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(imageBitmap, width, height, false);
         return resizedBitmap;
+    }
+
+
+//導航
+    public void router_action() {
+        if (nowPoint != null) {
+            float distance = getDistance(currentLocation, arraySteps.get(nowPoint[0]).get(nowPoint[1]).get(nowPoint[2]));
+            if (distance < 5) {
+                if (arraySteps.get(nowPoint[0]).get(nowPoint[1]).size() == nowPoint[2] + 1) {
+                    nowPoint[2] = 0;
+                    if (arraySteps.get(nowPoint[0]).size() == nowPoint[1] + 1) {
+                        if (points.size() == nowPoint[0] + 1) {
+                            //Toast.makeText(MapsActivity.this, "結束導航", Toast.LENGTH_SHORT).show();
+                        } else {
+                            //Toast.makeText(MapsActivity.this, "下個路徑點(大)", Toast.LENGTH_SHORT).show();
+                            nowPoint[0]++;
+                        }
+
+                    } else {
+                        //Toast.makeText(MapsActivity.this, "下個路徑點(小)", Toast.LENGTH_SHORT).show();
+                        nowPoint[1]++;
+                    }
+                } else {
+                    //Toast.makeText(MapsActivity.this, "下個點", Toast.LENGTH_SHORT).show();
+                    nowPoint[2]++;
+                }
+                //Toast.makeText(MapsActivity.this, "點距" + distance, Toast.LENGTH_SHORT).show();
+            } else if (distance < 10) {
+                //Toast.makeText(MapsActivity.this, "點距" + distance, Toast.LENGTH_SHORT).show();
+            } else if (distance < 15) {
+                //Toast.makeText(MapsActivity.this, "點距" + distance, Toast.LENGTH_SHORT).show();
+            } else {
+                //Toast.makeText(MapsActivity.this, "點距" + distance, Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }

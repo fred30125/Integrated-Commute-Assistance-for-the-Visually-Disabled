@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.Log;
 import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -41,7 +42,6 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
 import com.example.myapplication.bean.CardBean;
-import com.example.myapplication.common.logger.Log;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -73,7 +73,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+
 import static com.example.myapplication.MapsActivity.getPixelsFromDp;
+import static java.lang.Thread.sleep;
 
 public class FinalMainActivity  extends FragmentActivity
         implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks,GoogleApiClient.OnConnectionFailedListener, LocationListener ,OnInitListener  {
@@ -129,12 +131,18 @@ public class FinalMainActivity  extends FragmentActivity
     ArrayList<Bitmap> bmpArray=new ArrayList<>();
     Bitmap bmp;
     String google_maps_key;
+    boolean isStartingRouter=false;
+    int routerPromptNum;
     //---------------指南針---------------------
     private SensorManager manager;
     private SensorListener listener = new SensorListener();
-
+    //------------tts---------------------
     TextToSpeech tts;
-
+    boolean speakingEnd ;
+    int tts_state;
+    final int DO_SELECT_ROUTER=10;
+    final int DO_START_ROUTER=11;
+    final int DO_ROUTING=12;
 
 
     @Override
@@ -227,6 +235,7 @@ public class FinalMainActivity  extends FragmentActivity
             @Override
             public void onItemClick(int position) {
                 android.util.Log.i("pikachuuuu!!",position+"");
+
                 routerPoints=data_list.get(position).getLatLng();
                 //Toast.makeText(MapsActivity.this,data_list.get(position).getLatLng()+"",Toast.LENGTH_LONG).show();
             }
@@ -286,6 +295,12 @@ public class FinalMainActivity  extends FragmentActivity
                     Toast.makeText(FinalMainActivity.this, menuItem.getTitle()+"", Toast.LENGTH_SHORT).show();
 
                     downloadToPhone(menuItem.getTitle().toString());
+                    nowPoint=new int[3];
+                    nowPoint[0]=0;
+                    nowPoint[1]=0;
+                    nowPoint[2]=0;
+
+                    //開始導航
                     return true;
                 }
                 // 略..
@@ -294,7 +309,7 @@ public class FinalMainActivity  extends FragmentActivity
         });
 
 
-
+        tts_state=DO_SELECT_ROUTER;
 
 
 
@@ -429,6 +444,8 @@ public class FinalMainActivity  extends FragmentActivity
                             data_list.add(data);
                         }
                         routeAdapter.notifyDataSetChanged();
+                        find_prompt();
+                        findNearest();
                         drawAll();
 
 
@@ -511,6 +528,7 @@ public class FinalMainActivity  extends FragmentActivity
 
     @Override
     public void onLocationChanged(Location location) {
+       // Toast.makeText(this,"hello",Toast.LENGTH_LONG).show();
         Log.i("GPS", "onLocationChanged");
         // 取得目前位置
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
@@ -531,13 +549,17 @@ public class FinalMainActivity  extends FragmentActivity
             moveTimes=true;
             //requestBusStation();
         }
-        if(points.size()>0){
+        if(isStartingRouter){
+            router_action();
+        }
+    /*    if(points.size()>0){
             MyLatLng tmp = new MyLatLng(points.get(0).longitude,points.get(0).latitude);
             MyLatLng current = new MyLatLng(currentLocation.longitude,currentLocation.latitude);
             getDistance(currentLocation,points.get(0));
          //   Toast.makeText(this,turnTo(current,tmp),Toast.LENGTH_SHORT).show();
-        }
-       // router_action();
+        }*/
+        router_action();
+
     }
 
     @Override
@@ -651,35 +673,55 @@ public class FinalMainActivity  extends FragmentActivity
     public void router_action(){
         if(nowPoint!=null){
             float distance=getDistance(currentLocation,arraySteps.get(nowPoint[0]).get(nowPoint[1]).get(nowPoint[2]));
-            if(distance<5){
+            if(distance<30){
                 if(arraySteps.get(nowPoint[0]).get(nowPoint[1]).size()==nowPoint[2]+1){
                     nowPoint[2]=0;
                     if(arraySteps.get(nowPoint[0]).size()==nowPoint[1]+1){
                         if(points.size()==nowPoint[0]+1){
-                            Toast.makeText(FinalMainActivity.this,"結束導航", Toast.LENGTH_SHORT).show();
+                            do_tts("抵達目的地 導航結束");
                         }else {
-                            Toast.makeText(FinalMainActivity.this,"下個路徑點(大)", Toast.LENGTH_SHORT).show();
+                          //  Toast.makeText(FinalMainActivity.this,"下個路徑點(大)", Toast.LENGTH_LONG).show();
                             nowPoint[0]++;
                         }
 
                     }else{
-                        Toast.makeText(FinalMainActivity.this,"下個路徑點(小)", Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(FinalMainActivity.this,"下個路徑點(小)", Toast.LENGTH_LONG).show();
                         nowPoint[1]++;
+                    //    drawAll();
                     }
                 }else {
-                    Toast.makeText(FinalMainActivity.this,"下個點", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(FinalMainActivity.this,"下個點", Toast.LENGTH_LONG).show();
                     nowPoint[2]++;
+                   // drawAll();
                 }
-                Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_SHORT).show();
-            }else if(distance<10){
-                Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_SHORT).show();
-            }else if(distance<15){
-                Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_SHORT).show();
+                //Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_LONG).show();
+            }else if(distance<40){
+                //Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_LONG).show();
+            }else if(distance<50){
+              //  Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_LONG).show();
             }else{
-                Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_SHORT).show();
-
-
+               // Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_LONG).show();
             }
+
+
+
+            if(data_list.size()>0){
+                float promptDistance=getDistance(currentLocation,data_list.get(0).getLatLng());
+                if(promptDistance<30){
+                    do_tts(data_list.get(0).getDescription());
+                    removeItem(0);
+                }
+            }
+
+
+
+
+
+
+
+
+            Log.i("action",distance+"");
+            drawAll();
         }
     }
     private void drawAll() {
@@ -688,9 +730,8 @@ public class FinalMainActivity  extends FragmentActivity
                 @Override
                 public void run() {
                     mMap.clear();
-                    if(currentLocation!=null){
-                        mMap.addMarker(new MarkerOptions().position(currentLocation).title("I'm here...").snippet("now").icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("standing_up_man",100,100))));
-                    }
+                    currentMarker=null;
+
 
                     for (int i = 0; i < markerArrayList.size(); i++) {
                         markerArrayList.get(i).title(i + "");
@@ -732,28 +773,89 @@ public class FinalMainActivity  extends FragmentActivity
                     }
 
                     if(arraySteps!=null){
-                        for(int i=0;i<arraySteps.size();i++){
-                            android.util.Log.i("arraytest",i+"");
-                            if(points_state.get(i)==1){ //一般路徑
-                                for(int j=0;j<arraySteps.get(i).size();j++){
-                                    android.util.Log.i("arraytest",arraySteps.get(i).get(j)+"");
-                                    drawPath(arraySteps.get(i).get(j));
-                                }
-                            }else{
-                                if(i==0){
-                                    ArrayList<LatLng>tmp=new ArrayList<>();
-                                    tmp.add(currentLocation);
-                                    tmp.add(points.get(i));
-                                    drawPath(tmp);
+                        if(nowPoint!=null){
+                            for(int i=nowPoint[0];i<arraySteps.size();i++){
+                                android.util.Log.i("arraytest",i+"");
+                                if(points_state.get(i)==1){ //一般路徑
+                                    if(nowPoint[0]==i){
+                                        for(int j=nowPoint[1];j<arraySteps.get(i).size();j++){
+                                            // android.util.Log.i("arraytest",arraySteps.get(i).get(j)+"");
+                                            if(nowPoint[1]==j){
+                                                ArrayList<LatLng>points=new ArrayList<>();
+                                                for(int k=nowPoint[2];k<arraySteps.get(i).get(j).size();k++){
+                                                    points.add(arraySteps.get(i).get(j).get(k));
+                                                }
+                                                drawPath(points);
+                                            }else{
+                                                drawPath(arraySteps.get(i).get(j));
+                                            }
+                                        }
+                                    }else{
+                                        for(int j=0;j<arraySteps.get(i).size();j++){
+                                            // android.util.Log.i("arraytest",arraySteps.get(i).get(j)+"");
+                                            drawPath(arraySteps.get(i).get(j));
+                                        }
+                                    }
+
                                 }else{
-                                    ArrayList<LatLng>tmp=new ArrayList<>();
-                                    tmp.add(points.get(i-1));
-                                    tmp.add(points.get(i));
-                                    drawPath(tmp);
+                                    if(i==0){
+                                        ArrayList<LatLng>tmp=new ArrayList<>();
+                                        tmp.add(currentLocation);
+                                        tmp.add(points.get(i));
+                                        drawPath(tmp);
+                                    }else{
+                                        ArrayList<LatLng>tmp=new ArrayList<>();
+                                        tmp.add(points.get(i-1));
+                                        tmp.add(points.get(i));
+                                        drawPath(tmp);
+                                    }
                                 }
                             }
-
+                        }else{
+                            for(int i=0;i<arraySteps.size();i++){
+                                android.util.Log.i("arraytest",i+"");
+                                if(points_state.get(i)==1){ //一般路徑
+                                    for(int j=0;j<arraySteps.get(i).size();j++){
+                                        // android.util.Log.i("arraytest",arraySteps.get(i).get(j)+"");
+                                        drawPath(arraySteps.get(i).get(j));
+                                    }
+                                }else{
+                                    if(i==0){
+                                        ArrayList<LatLng>tmp=new ArrayList<>();
+                                        tmp.add(currentLocation);
+                                        tmp.add(points.get(i));
+                                        drawPath(tmp);
+                                    }else{
+                                        ArrayList<LatLng>tmp=new ArrayList<>();
+                                        tmp.add(points.get(i-1));
+                                        tmp.add(points.get(i));
+                                        drawPath(tmp);
+                                    }
+                                }
+                            }
                         }
+
+                    }
+
+                    if (nowPoint != null) {
+                        mMap.addMarker(new MarkerOptions()
+                                .title("路徑播報")
+                                .snippet("router")
+                                .position(arraySteps.get(nowPoint[0]).get(nowPoint[1]).get(nowPoint[2]))
+                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.to_down)));
+
+                        ArrayList<LatLng>tmp=new ArrayList<>();
+                        tmp.add(currentLocation);
+                        tmp.add(arraySteps.get(nowPoint[0]).get(nowPoint[1]).get(nowPoint[2]));
+                        drawPath(tmp);
+
+                    }
+
+                    if (currentMarker == null) {
+                        currentMarker = mMap.addMarker(new MarkerOptions().position(currentLocation).title("I'm here...").snippet("now").icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("standing_up_man",100,100))));
+                        // points.set(0,latLng);
+                    } else {
+                        currentMarker.setPosition(currentLocation);
                     }
 
                 }
@@ -839,6 +941,7 @@ public class FinalMainActivity  extends FragmentActivity
 
     //---------語音部分------------
     public void getSpeechInput() {
+        wait_TTS_End();
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
@@ -858,19 +961,16 @@ public class FinalMainActivity  extends FragmentActivity
             case 10:
                 if (resultCode == RESULT_OK && data != null) {
                     ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-                    Toast.makeText(this,result.get(0),Toast.LENGTH_LONG).show();
-                    if(result.get(0).equals("東方哈佛")){
-                        do_tts("長庚大學");
-                    }else{
-                        do_tts(result.get(0));
-                    }
-
+                    //Toast.makeText(this,result.get(0),Toast.LENGTH_LONG).show();
+                    speak_recognize(result.get(0),tts_state);
 
                 }
                 break;
         }
     }
     void do_tts(String tts_txt){
+
+
         tts.speak(tts_txt, TextToSpeech.QUEUE_ADD, null);
     }
     @Override
@@ -879,11 +979,91 @@ public class FinalMainActivity  extends FragmentActivity
             tts.shutdown();
         super.onDestroy();
     }
+    void speak_recognize(String result,int tts_state)  {
+        switch (tts_state){
+            case DO_SELECT_ROUTER: //設定路線
+                boolean isFindRouter=false;
+                for(int i=0;i<getRouterNameArr.size();i++){
+                    if(result.contains(getRouterNameArr.get(i))){
+                        downloadToPhone(getRouterNameArr.get(i));
+                        do_tts("正幫你導航到"+getRouterNameArr.get(i));
+                        this.tts_state=DO_ROUTING;
+                        isFindRouter=true;
+                        isStartingRouter=true;
+                    }
+                }
+                if (!isFindRouter){
+                    do_tts("辨識不正確 請再說一次");
+                    getSpeechInput();
+                }
+                break;
+            case DO_ROUTING:  //導航中
+                //do something
+                //do_tts("正幫你導航到"+getRouterNameArr.get(i));
+                break;
+        }
+
+    }
     public Bitmap resizeMapIcons(String iconName,int width, int height){
         Bitmap imageBitmap = BitmapFactory.decodeResource(getResources(),getResources().getIdentifier(iconName, "drawable", getPackageName()));
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(imageBitmap, width, height, false);
         return resizedBitmap;
     }
+    public  void wait_TTS_End(){
+        speakingEnd = tts.isSpeaking();
+        do{
+            speakingEnd = tts.isSpeaking();
+        } while (speakingEnd);
+    }
+    public void findNearest(){
+        float min=999999999;
+        int tmpA=0,tmpB=0;
+        Log.i("起始點",arraySteps.size()+"size"+arraySteps.get(0).size());
+        for(int i=0;i<arraySteps.size();i++){
+            for(int j=0;j<arraySteps.get(i).size();j++){
+                Log.i("起始點",getDistance(currentLocation,arraySteps.get(i).get(j).get(0))+"");
+                if(min>getDistance(currentLocation,arraySteps.get(i).get(j).get(0))){
+                    min=getDistance(currentLocation,arraySteps.get(i).get(j).get(0));
+                    tmpA=i;
+                    tmpB=j;
+                }
+            }
+        }
+        nowPoint[0]=tmpA;
+        nowPoint[1]=tmpB;
+        Log.i("起始點",nowPoint[0]+","+nowPoint[1]);
+    }
+
+    public void find_prompt(){
+        int minNUM=0;
+        float min=99999999;
+        for(int i=0;i<data_list.size();i++){
+            if(min>getDistance(currentLocation,data_list.get(i).getLatLng())){
+                min=getDistance(currentLocation,data_list.get(i).getLatLng());
+                minNUM=i;
+            }
+        }
+        Log.i("min",minNUM+"");
+        routerPromptNum=minNUM;
+        for(int i=0;i<routerPromptNum;i++){
+            removeItem(0);
+
+        }
+
+    }
+
+    //recycle adapter func
+    public void insertItem(int position, RouterData routerData) {
+        data_list.add(position, routerData);
+        //  routeAdapter.notifyItemInserted(position);
+    }
+
+    public void removeItem(int position) {
+        data_list.remove(position);
+        routeAdapter.notifyItemRemoved(position);
+        routeAdapter.notifyItemRangeChanged(position, data_list.size());
+    }
+
 
 
 

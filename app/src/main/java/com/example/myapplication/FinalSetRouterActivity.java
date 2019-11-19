@@ -253,7 +253,6 @@ public class FinalSetRouterActivity extends FragmentActivity
                     arraySteps=new ArrayList<>();
                     markerTotal=0;
 
-
                     LatLng tmpLatLng=convertAddressToLanLng(txtAddress.getText().toString());
                     if(tmpLatLng!=null){
                         firstLocation=tmpLatLng;
@@ -275,7 +274,6 @@ public class FinalSetRouterActivity extends FragmentActivity
                         mMap.moveCamera(CameraUpdateFactory.newLatLng(tmpLatLng));
                         requestBusStation(tmpLatLng);
                         drawAll();
-
 
                     }
                 }
@@ -762,6 +760,7 @@ public class FinalSetRouterActivity extends FragmentActivity
                 //Map.put("router", jsonObjectToServer.toString());
 
                 JSONArray arrfile = new JSONArray();
+                JSONArray arrBusMarker = new JSONArray();
 
                 for (int i = 0; i < data_list.size(); i++) {
                     JSONObject jsonObject1 = new JSONObject();
@@ -774,10 +773,31 @@ public class FinalSetRouterActivity extends FragmentActivity
                     }
                     arrfile.put(jsonObject1);
                 }
+                //上傳公車merker
+                for (int i = 0; i < busMarkerArrayList.size(); i++) {
+                    JSONObject jsonObject1 = new JSONObject();
+                    try {
+                        jsonObject1.put("title", busMarkerArrayList.get(i).getTitle());
+                        jsonObject1.put("Lat", busMarkerArrayList.get(i).getPosition().latitude);
+                        jsonObject1.put("Lon", busMarkerArrayList.get(i).getPosition().longitude);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    arrBusMarker.put(jsonObject1);
+                }
+                //---
                 if (objFile != null && data_list != null) {
                     try {
                         objFile.put("point_state", points_state);
                         objFile.put("data_list", arrfile);
+                        if(arrBusMarker!=null){
+                            try {
+                                objFile.put("bus_marker",arrBusMarker);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -799,6 +819,8 @@ public class FinalSetRouterActivity extends FragmentActivity
                     }
                     Map.put("router", objFile.toString());
                 }
+
+
 
                 Map.put("ID", personName);
                 Map.put("email", personEmail);
@@ -1323,6 +1345,8 @@ public class FinalSetRouterActivity extends FragmentActivity
                                 }
                             } else {
                                 routeOrder.add(i, p.getStops().get(i).getStopName().getZhTw());
+                                endLat = p.getStops().get(i).getStopPosition().getPositionLat();
+                                endLon= p.getStops().get(i).getStopPosition().getPositionLon();
                                 Log.e("列出下車站牌", p.getStops().get(i).getStopName().getZhTw());
                             }
                         }
@@ -1643,9 +1667,62 @@ public class FinalSetRouterActivity extends FragmentActivity
                     case STATE_BUS_STOP:
                         Log.i("test same", "1:" + tmpTX + "name1" + StopNameStart + " name2:" + tx);
                         endLatLng = new LatLng(endLat, endLon);
-                        busStopstart=StopNameStart;
+
+                        //  SameDestinationRoute(tmpTX, "0", StopNameStart, tx);
                         //vv-----------測試--------------------------
-                        SameDestinationRoute(tmpTX, "0", StopNameStart, tx);
+                        Toast.makeText(FinalSetRouterActivity.this, "成功選擇:" + tx, Toast.LENGTH_LONG).show();
+                        endLatLng = new LatLng(endLat, endLon);
+                        //-------------------新增marker--------------
+                        if (points_state.get(points_state.size() - 1) == 2) {
+                            points.add(startLatLng);
+                            points_state.add(2);
+                            points.add(endLatLng);
+                            points_state.add(2);
+
+                            MarkerOptions tmpMarker = new MarkerOptions()
+                                    .title(StopNameStart +"_"+tmpTX)
+                                    .snippet("bus_stop")
+                                    .position(startLatLng)
+                                    .draggable(false)
+                                    .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stophand_round",100,100)));
+                            mMap.addMarker(tmpMarker);
+                            busMarkerArrayList.add(tmpMarker);
+                            tmpMarker = new MarkerOptions()
+                                    .title(tx+"_"+tmpTX)
+                                    .snippet("bus_stop")
+                                    .position(endLatLng)
+                                    .draggable(false)
+                                    .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stophand_round",100,100)));
+                            mMap.addMarker(tmpMarker);
+                            busMarkerArrayList.add(tmpMarker);
+                        } else {
+                            points.add(startLatLng);
+                            points_state.add(1);
+                            points.add(endLatLng);
+                            points_state.add(2);
+
+                            MarkerOptions tmpMarker = new MarkerOptions()
+                                    .title(StopNameStart +"_"+tmpTX)
+                                    .snippet("bus_stop")
+                                    .position(startLatLng)
+                                    .draggable(false)
+                                    .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stophand_round",100,100)));
+                            mMap.addMarker(tmpMarker);
+                            busMarkerArrayList.add(tmpMarker);
+                            tmpMarker = new MarkerOptions()
+                                    .title(tx +"_"+tmpTX)
+                                    .snippet("bus_stop")
+                                    .position(endLatLng)
+                                    .draggable(false)
+                                    .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stophand_round",100,100)));
+                            mMap.addMarker(tmpMarker);
+                            busMarkerArrayList.add(tmpMarker);
+
+                        }
+                        getDirection(firstLocation, points.get(points.size() - 1));
+                        //--------------------
+                        CARDSTATE = STATE_BUS_NUM;
+
                         break;
                     case STATE_BUS_SAME:
                         Toast.makeText(FinalSetRouterActivity.this, "成功選擇:" + tx, Toast.LENGTH_LONG).show();

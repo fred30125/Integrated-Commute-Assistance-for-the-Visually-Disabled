@@ -37,7 +37,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
 import com.android.volley.RequestQueue;
+import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
@@ -75,6 +77,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -108,6 +111,7 @@ public class FinalMainActivity  extends FragmentActivity
     private StringRequest request;
     private final  static String ROUTER_NAME_URL="http://163.25.101.33:80/loginapp/router_name.php";
     private final  static String downLoad_URL="http://163.25.101.33:80/loginapp/router_download.php";
+    private final  static String RESERVATION_URL="http://163.25.101.33:80/loginapp/reservation.php";
     ArrayList<String> getRouterNameArr;
     private RequestQueue requestQueue;
     ArrayList<ArrayList<ArrayList<LatLng>>> arraySteps;
@@ -123,6 +127,7 @@ public class FinalMainActivity  extends FragmentActivity
     String tmpTX;
 
     //-------map------------
+    ArrayList<Integer> state_bus; //0是還沒 1做了
     ArrayList<MarkerOptions> busMarkerArrayList;
     private GoogleApiClient googleApiClient;
     private LocationRequest locationRequest;
@@ -169,6 +174,12 @@ public class FinalMainActivity  extends FragmentActivity
     List<String> routeOrder = new ArrayList<String>();
     String departure = "";
     String departure_encode="";
+    int theFastBusNum = 0;
+    String theclostBus = "";
+    String[] tokens;
+    int nowBusStop;
+
+    boolean isReservation=false;
 
 
     @Override
@@ -258,8 +269,6 @@ public class FinalMainActivity  extends FragmentActivity
         testButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-
                 Route=encode("265區");
                 departure="光復橋";
                 departure_encode=encode(departure);
@@ -462,10 +471,14 @@ public class FinalMainActivity  extends FragmentActivity
                             points.add(latLng);
                         }
                         //get busMarker
+
                         busMarkerArrayList=new ArrayList<>();
+                        state_bus=new ArrayList<>();
+
                         JSONArray jsonArray_bus=new JSONArray();
                         jsonArray_bus=jsonObject.getJSONArray("bus_marker");
                         for(int i=0;i<jsonArray_bus.length();i++){
+                            nowBusStop=0;
                             JSONObject jsonObject3=jsonArray_bus.getJSONObject(i);
                             LatLng latLng=new LatLng(jsonObject3.getDouble("Lat"),jsonObject3.getDouble("Lon"));
                             MarkerOptions tmpMarker = new MarkerOptions()
@@ -475,6 +488,7 @@ public class FinalMainActivity  extends FragmentActivity
                                     .draggable(false)
                                     .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stophand_round",100,100)));
                             busMarkerArrayList.add(tmpMarker);
+                            state_bus.add(0);
                             mMap.addMarker(tmpMarker);
                         }
                         //---------------
@@ -494,9 +508,8 @@ public class FinalMainActivity  extends FragmentActivity
 
                             data_list.add(data);
                         }
-                        routeAdapter.notifyDataSetChanged();
-                        find_prompt();
-                        findNearest();
+                        routeAdapter.notifyDataSetChanged();//         find_prompt();
+              //          findNearest();
                         drawAll();
 
 
@@ -723,39 +736,56 @@ public class FinalMainActivity  extends FragmentActivity
     }
     public void router_action(){
         if(nowPoint!=null){
-            float distance=getDistance(currentLocation,arraySteps.get(nowPoint[0]).get(nowPoint[1]).get(nowPoint[2]));
-            if(distance<30){
-                if(arraySteps.get(nowPoint[0]).get(nowPoint[1]).size()==nowPoint[2]+1){
-                    nowPoint[2]=0;
-                    if(arraySteps.get(nowPoint[0]).size()==nowPoint[1]+1){
-                        if(points.size()==nowPoint[0]+1){
-                            do_tts("抵達目的地 導航結束");
-                        }else {
-                          //  Toast.makeText(FinalMainActivity.this,"下個路徑點(大)", Toast.LENGTH_LONG).show();
-                            nowPoint[0]++;
+            if(points_state.get(nowPoint[0])==1){ //一般路徑
+                float distance=getDistance(currentLocation,arraySteps.get(nowPoint[0]).get(nowPoint[1]).get(nowPoint[2]));
+                if(distance<30){
+                    if(arraySteps.get(nowPoint[0]).get(nowPoint[1]).size()==nowPoint[2]+1){
+                        nowPoint[2]=0;
+                        if(arraySteps.get(nowPoint[0]).size()==nowPoint[1]+1){
+                            if(points.size()==nowPoint[0]+1){
+                                do_tts("抵達目的地 導航結束");
+                            }else {
+                                //  Toast.makeText(FinalMainActivity.this,"下個路徑點(大)", Toast.LENGTH_LONG).show();
+                                nowPoint[0]++;
+                            }
+                        }else{
+                            //Toast.makeText(FinalMainActivity.this,"下個路徑點(小)", Toast.LENGTH_LONG).show();
+                            nowPoint[1]++;
+                            //    drawAll();
                         }
-
-                    }else{
-                        //Toast.makeText(FinalMainActivity.this,"下個路徑點(小)", Toast.LENGTH_LONG).show();
-                        nowPoint[1]++;
-                    //    drawAll();
+                    }else {
+                        //Toast.makeText(FinalMainActivity.this,"下個點", Toast.LENGTH_LONG).show();
+                        nowPoint[2]++;
+                        // drawAll();
                     }
-                }else {
-                    //Toast.makeText(FinalMainActivity.this,"下個點", Toast.LENGTH_LONG).show();
-                    nowPoint[2]++;
-                   // drawAll();
+                    //Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_LONG).show();
+                }else if(distance<40){
+                    //Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_LONG).show();
+                }else if(distance<50){
+                    //  Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_LONG).show();
+                }else{
+                    // Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_LONG).show();
                 }
-                //Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_LONG).show();
-            }else if(distance<40){
-                //Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_LONG).show();
-            }else if(distance<50){
-              //  Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_LONG).show();
             }else{
-               // Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_LONG).show();
+                float distance=getDistance(currentLocation,points.get(nowPoint[0]));
+                if(distance<30){
+                    if(points.size()==nowPoint[0]+1){
+                        do_tts("抵達目的地 導航結束");
+                    }else {
+                        //  Toast.makeText(FinalMainActivity.this,"下個路徑點(大)", Toast.LENGTH_LONG).show();
+                        nowPoint[0]++;
+                    }
+                    //Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_LONG).show();
+                }else if(distance<40){
+                    //Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_LONG).show();
+                }else if(distance<50){
+                    //  Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_LONG).show();
+                }else{
+                    // Toast.makeText(FinalMainActivity.this,"點距"+distance, Toast.LENGTH_LONG).show();
+                }
+
             }
-
-
-
+            //如果與路線提示點<30m DO:提示和刪除
             if(data_list.size()>0){
                 float promptDistance=getDistance(currentLocation,data_list.get(0).getLatLng());
                 if(promptDistance<30){
@@ -763,15 +793,21 @@ public class FinalMainActivity  extends FragmentActivity
                     removeItem(0);
                 }
             }
+            //做預約公車
+            if(busMarkerArrayList.size()>0){
+                float promptDistance=getDistance(currentLocation,busMarkerArrayList.get(nowBusStop).getPosition());
+                if(promptDistance<30){
+                    do_tts("請問是否要幫你預約公車");
+                    tokens = busMarkerArrayList.get(0).getTitle().split("_");
+                    Route=encode(tokens[1]);
+                    departure=tokens[0];
+                    departure_encode=encode(departure);
+                    nowBusStop++;
+                    EstimateTime(departure_encode,"1");
+                    //do_tts("最快公車"+tokens[1]+"到站時間為"+EstimatedTimeList.get(theFastBusNum).get("time"));
+                }
+            }
 
-
-
-
-
-
-
-
-            Log.i("action",distance+"");
             drawAll();
         }
     }
@@ -788,7 +824,7 @@ public class FinalMainActivity  extends FragmentActivity
                         markerArrayList.get(i).title(i + "");
                         mMap.addMarker(markerArrayList.get(i));
                     }
-                    lineOptions = new PolylineOptions();
+                  /*  lineOptions = new PolylineOptions();
                     lineOptions.add(currentLocation); // 加入所有座標點到多邊形
                     lineOptions.addAll(points); // 加入所有座標點到多邊形
                     lineOptions.width(1);
@@ -800,7 +836,7 @@ public class FinalMainActivity  extends FragmentActivity
                         polyline = mMap.addPolyline(lineOptions);
                     } else {
                         android.util.Log.d("onPostExecute", "draw line error!");
-                    }
+                    }*/
                     if (busDataArrayList != null) {
                         try{
                             for (int i = 0; i < busDataArrayList.size(); i++) {
@@ -854,6 +890,11 @@ public class FinalMainActivity  extends FragmentActivity
                                         tmp.add(currentLocation);
                                         tmp.add(points.get(i));
                                         drawPath(tmp);
+                                    }else if(nowPoint[0]==points.size()-1){
+                                        ArrayList<LatLng>tmp=new ArrayList<>();
+                                        tmp.add(currentLocation);
+                                        tmp.add(points.get(i));
+                                        drawPath(tmp);
                                     }else{
                                         ArrayList<LatLng>tmp=new ArrayList<>();
                                         tmp.add(points.get(i-1));
@@ -867,7 +908,6 @@ public class FinalMainActivity  extends FragmentActivity
                                 android.util.Log.i("arraytest",i+"");
                                 if(points_state.get(i)==1){ //一般路徑
                                     for(int j=0;j<arraySteps.get(i).size();j++){
-                                        // android.util.Log.i("arraytest",arraySteps.get(i).get(j)+"");
                                         drawPath(arraySteps.get(i).get(j));
                                     }
                                 }else{
@@ -894,16 +934,37 @@ public class FinalMainActivity  extends FragmentActivity
                     }
 
                     if (nowPoint != null) {
-                        mMap.addMarker(new MarkerOptions()
-                                .title("路徑播報")
-                                .snippet("router")
-                                .position(arraySteps.get(nowPoint[0]).get(nowPoint[1]).get(nowPoint[2]))
-                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.to_down)));
+                        if(points_state.get(nowPoint[0])==1) { //一般路徑
+                            mMap.addMarker(new MarkerOptions()
+                                    .title("路徑播報")
+                                    .snippet("router")
+                                    .position(arraySteps.get(nowPoint[0]).get(nowPoint[1]).get(nowPoint[2]))
+                                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.to_down)));
 
-                        ArrayList<LatLng>tmp=new ArrayList<>();
-                        tmp.add(currentLocation);
-                        tmp.add(arraySteps.get(nowPoint[0]).get(nowPoint[1]).get(nowPoint[2]));
-                        drawPath(tmp);
+                            ArrayList<LatLng>tmp=new ArrayList<>();
+                            tmp.add(currentLocation);
+                            tmp.add(arraySteps.get(nowPoint[0]).get(nowPoint[1]).get(nowPoint[2]));
+                            drawPath(tmp);
+                        }else{
+                            mMap.addMarker(new MarkerOptions()
+                                    .title("路徑播報")
+                                    .snippet("router")
+                                    .position(points.get(nowPoint[0]))
+                                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.to_down)));
+
+                            ArrayList<LatLng>tmp=new ArrayList<>();
+                            tmp.add(currentLocation);
+                            tmp.add(points.get(nowPoint[0]));
+                            drawPath(tmp);
+                        }
+
+
+
+
+
+
+
+
 
                     }
 
@@ -1184,7 +1245,7 @@ public class FinalMainActivity  extends FragmentActivity
     //------------------------------------------------------------------------------
     //用來找出哪一台公車最快來
     private void theFastBus(final String dir) {
-        int theFastBus = 0;
+        theFastBusNum = 0;
         int time;
         Log.e("size", EstimatedTimeList.size() + "");
         if (EstimatedTimeList.size() != 0) {
@@ -1192,13 +1253,19 @@ public class FinalMainActivity  extends FragmentActivity
             for (int i = 1; i < EstimatedTimeList.size(); i++) {
                 Log.e("EstimatedTimeList", EstimatedTimeList.get(i).get("route"));
                 time = Integer.parseInt(EstimatedTimeList.get(i).get("time"));
-                if (time < Integer.parseInt(EstimatedTimeList.get(theFastBus).get("time"))) {
-                    theFastBus = i;
+                if (time < Integer.parseInt(EstimatedTimeList.get(theFastBusNum).get("time"))) {
+                    theFastBusNum = i;
                 }
             }
-            Route = EstimatedTimeList.get(theFastBus).get("route");
-            Log.e("最快到站的公車是", EstimatedTimeList.get(theFastBus).get("route"));
-            Log.e("再幾分鐘來", EstimatedTimeList.get(theFastBus).get("time"));
+            Route = EstimatedTimeList.get(theFastBusNum).get("route");
+            Log.e("最快到站的公車是", EstimatedTimeList.get(theFastBusNum).get("route"));
+            Log.e("再幾分鐘來", EstimatedTimeList.get(theFastBusNum).get("time"));
+            do_tts("最快公車"+tokens[1]+"號到站時間為"+EstimatedTimeList.get(theFastBusNum).get("time")+"分鐘");
+
+
+
+
+
 
             StopOfRoute(Route, dir, 2);//找出StopName1Squence
         }
@@ -1206,7 +1273,7 @@ public class FinalMainActivity  extends FragmentActivity
     //------------------------------------------------------------------------------
     //用來預約公車司機
 
-    private void Resevation(final String dir) {
+    private void Reservation(final String dir) {
         Log.e("loc", "現在執行的函式是= RealTimeNearStop");
         Data = "RealTimeNearStop";
         City_a = "Taipei";
@@ -1219,11 +1286,12 @@ public class FinalMainActivity  extends FragmentActivity
             public void onResponse(retrofit2.Call<List<RealTimeNearStop>> call, retrofit2.Response<List<RealTimeNearStop>> response) {
                 Log.e("OkHttp", "RealTimeNearStop response = " + response.body().toString());
                 List<RealTimeNearStop> list = response.body();
-                String theclostBus = "";
+                theclostBus = "";
                 if (!list.isEmpty()) {
                     for (RealTimeNearStop p : list) {
                         if (p.getStopSequence() < StopName1Squence) {
                             theclostBus = p.getPlateNumb();
+
                         }
                     }
                 }
@@ -1231,6 +1299,16 @@ public class FinalMainActivity  extends FragmentActivity
 
                 //--------------VVVVVVVVVVVVVVVVVVV----------------
                 //做上傳預約資訊動作 theclostBus->公車車牌
+                if(!isReservation){
+                    String[] token0 = busMarkerArrayList.get(0).getTitle().split("_");
+                    String[] token1 = busMarkerArrayList.get(1).getTitle().split("_");
+                    reservationToDatabase(theclostBus,token0[0],token1[0]);
+                    isReservation=true;
+                }else{
+                    do_tts("抵達下車站");
+                    isReservation=false;
+                }
+
 
 
             }
@@ -1281,7 +1359,7 @@ public class FinalMainActivity  extends FragmentActivity
                                     Log.e("這臺公車的stop sequence", StopName1Squence + "");
 
                                     //---------------判斷預約--------------------
-                                    Resevation(dir);
+                                    Reservation(dir);
                                 }
                             } else {
                                 routeOrder.add(i, p.getStops().get(i).getStopName().getZhTw());
@@ -1316,8 +1394,46 @@ public class FinalMainActivity  extends FragmentActivity
         //%E6%8D%B7%E9%81%8B%E8%A5%BF%E9%96%80%E7%AB%99
         return sb.toString();
     }
-    //-----------------------------------------------------
 
+    //-----------------------------------------------------
+    public void reservationToDatabase(final String license,final String start_stop,final String end_stop){
+        request=new StringRequest(Request.Method.POST, RESERVATION_URL, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
+                    Log.i("tagconvertstr", "["+response+"]");
+                    JSONObject jsonObject=new JSONObject(response);
+
+                    if(jsonObject.names().get(0).equals("success")){
+                       // Toast.makeText(getApplicationContext(),"SUCCESS!!"+jsonObject.getString("success"),Toast.LENGTH_SHORT).show();
+                        do_tts("已幫你預約公車司機");
+                    }else{
+                        Toast.makeText(getApplicationContext(),"Error!!"+jsonObject.getString("error"),Toast.LENGTH_SHORT).show();
+                    }
+                } catch (JSONException e) {
+                    Log.e("error",e.toString());
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("error2",error.toString());
+            }
+        }){
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String,String> Map=new  HashMap<String,String>();
+                Map.put("license",license);
+                Map.put("start_stop",start_stop);
+                Map.put("end_stop",end_stop);
+                Log.i("test stop",license+":"+start_stop+":"+end_stop);
+                return Map;
+            }
+        };
+        Log.i("test", "request:"+requestQueue.toString());
+        requestQueue.add(request);
+    }
 
 
 

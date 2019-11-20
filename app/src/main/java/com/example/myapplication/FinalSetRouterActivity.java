@@ -174,19 +174,21 @@ public class FinalSetRouterActivity extends FragmentActivity
     JSONObject objFile;
     JSONArray arrFile;
     ArrayList<String> getRouterNameArr;
-    //------------筱琪--------------
+    //------------筱淇--------------
     String Data = "";
     String City_a = "Taipei";
     String Query = "";
     String Start = "";
     String Dir = "";
     String Route = "";
-    //LinkedList<HashMap<String, String>> routeList = new LinkedList<>();
+  //  LinkedList<HashMap<String, Double>> destination = new LinkedList<>();
     List<String> routeOrder = new ArrayList<String>();
     List<String> routeList = new ArrayList<String>();
     List<String> SameDepartureRouteList = new ArrayList<String>();
     List<String> SameDestationRouteList = new ArrayList<String>();
     List<String> SameStopName = new ArrayList<String>();
+    List<Double> destationLat = new ArrayList<Double>();
+    List<Double> destationLon = new ArrayList<Double>();
     //----------------------------Test Data------------------------------
     String StopName1 = "金陵女中";
     double endLat;
@@ -1311,8 +1313,9 @@ public class FinalSetRouterActivity extends FragmentActivity
     // func=1:用來看下車車站中的路線那些有經過上車車站
     // func=2:用來查詢stopsequence
     public void StopOfRoute(final String RouteNumb, final String dir, final int func) {
-
         routeOrder = new ArrayList<>();
+        destationLat = new ArrayList<>();
+        destationLon = new ArrayList<>();
         Log.e("loc", "現在執行的函式是= StopOfRoute");
         Data = "StopOfRoute";
         City_a = "Taipei";
@@ -1323,6 +1326,8 @@ public class FinalSetRouterActivity extends FragmentActivity
             public void onResponse(retrofit2.Call<List<StopOfRoute>> call, retrofit2.Response<List<StopOfRoute>> response) {
                 Log.e("OkHttp", "車牌順序成功了啦 response = " + response.body().toString());
                 List<StopOfRoute> list = response.body();
+                HashMap<String, Double> destinationContain = new HashMap<>();
+
                 for (StopOfRoute p : list) {
                     Log.e("func<!1>列出相同上車站牌的路線:", RouteNumb);
                     if (p.getDirection().toString().equals(dir)) {//確定方向
@@ -1345,12 +1350,19 @@ public class FinalSetRouterActivity extends FragmentActivity
                                 }
                             } else {
                                 routeOrder.add(i, p.getStops().get(i).getStopName().getZhTw());
-                                endLat = p.getStops().get(i).getStopPosition().getPositionLat();
-                                endLon= p.getStops().get(i).getStopPosition().getPositionLon();
+                              //  destinationContain.put("route",p.getStops().get(i).getStopName().getZhTw());
+                                destationLat.add(i,p.getStops().get(i).getStopPosition().getPositionLat());
+                                destationLon.add(i,p.getStops().get(i).getStopPosition().getPositionLon());
+                                Log.e("看經緯度", i+":"+p.getStops().get(i).getStopPosition().getPositionLat()+","+p.getStops().get(i).getStopPosition().getPositionLon());
+                                //endLat = p.getStops().get(i).getStopPosition().getPositionLat();
+                                //endLon= p.getStops().get(i).getStopPosition().getPositionLon();
                                 Log.e("列出下車站牌", p.getStops().get(i).getStopName().getZhTw());
+
                             }
+
                         }
                     }
+
                 }
                 if (func == 1) {
                     CARDSTATE = STATE_BUS_SAME;
@@ -1651,6 +1663,8 @@ public class FinalSetRouterActivity extends FragmentActivity
             @Override
             public void onOptionsSelect(int options1, int option2, int options3, View v) {
                 //返回的分别是三个级别的选中位置
+//                destination.get(options1).get("endLat");
+//                destination.get(options1).get("endLon");
                 String tx = cardItem.get(options1).getPickerViewText();
                 if (CARDSTATE == STATE_DOWNLOAD) {
 
@@ -1665,13 +1679,17 @@ public class FinalSetRouterActivity extends FragmentActivity
                         //pvCustomOptions.setPicker(cardItem);
                         break;
                     case STATE_BUS_STOP:
+
                         Log.i("test same", "1:" + tmpTX + "name1" + StopNameStart + " name2:" + tx);
-                        endLatLng = new LatLng(endLat, endLon);
+
+                        Log.i("test num:", options1+"");
+                        endLatLng = new LatLng(destationLat.get(options1),destationLon.get(options1));
+                        Log.i("check end",endLatLng+"");
 
                         //  SameDestinationRoute(tmpTX, "0", StopNameStart, tx);
                         //vv-----------測試--------------------------
                         Toast.makeText(FinalSetRouterActivity.this, "成功選擇:" + tx, Toast.LENGTH_LONG).show();
-                        endLatLng = new LatLng(endLat, endLon);
+                     //   endLatLng = new LatLng(endLat, endLon);
                         //-------------------新增marker--------------
                         if (points_state.get(points_state.size() - 1) == 2) {
                             points.add(startLatLng);
@@ -1719,6 +1737,8 @@ public class FinalSetRouterActivity extends FragmentActivity
                             busMarkerArrayList.add(tmpMarker);
 
                         }
+
+                        Log.i("check end1",firstLocation+":  :"+points.get(points.size() - 1));
                         getDirection(firstLocation, points.get(points.size() - 1));
                         //--------------------
                         CARDSTATE = STATE_BUS_NUM;
@@ -1726,7 +1746,7 @@ public class FinalSetRouterActivity extends FragmentActivity
                         break;
                     case STATE_BUS_SAME:
                         Toast.makeText(FinalSetRouterActivity.this, "成功選擇:" + tx, Toast.LENGTH_LONG).show();
-                        endLatLng = new LatLng(endLat, endLon);
+                        endLatLng = new LatLng(destationLat.get(options1),destationLon.get(options1));
                         //-------------------新增marker--------------
                         if (points_state.get(points_state.size() - 1) == 2) {
                             points.add(startLatLng);
@@ -1774,10 +1794,8 @@ public class FinalSetRouterActivity extends FragmentActivity
                             busMarkerArrayList.add(tmpMarker);
 
 
-
-
-
                         }
+                        Log.i("check end2",firstLocation+":  :"+points.get(points.size() - 1));
                         getDirection(firstLocation, points.get(points.size() - 1));
                         //--------------------
                         CARDSTATE = STATE_BUS_NUM;

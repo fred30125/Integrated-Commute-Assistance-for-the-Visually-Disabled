@@ -702,7 +702,7 @@ public class MapsActivity extends FragmentActivity
             MyLatLng tmp = new MyLatLng(points.get(0).longitude, points.get(0).latitude);
             MyLatLng current = new MyLatLng(currentLocation.longitude, currentLocation.latitude);
             getDistance(currentLocation, points.get(0));
-            Toast.makeText(this, turnTo(current, tmp), Toast.LENGTH_SHORT).show();
+          //  Toast.makeText(this, turnTo(current, tmp), Toast.LENGTH_SHORT).show();
         }
         router_action();
 
@@ -1190,16 +1190,13 @@ public class MapsActivity extends FragmentActivity
         double m_RadLo, m_RadLa;
         double Ec;
         double Ed;
-
         public MyLatLng(double longitude, double latitude) {
             m_LoDeg = (int) longitude;
             m_LoMin = (int) ((longitude - m_LoDeg) * 60);
             m_LoSec = (longitude - m_LoDeg - m_LoMin / 60.) * 3600;
-
             m_LaDeg = (int) latitude;
             m_LaMin = (int) ((latitude - m_LaDeg) * 60);
             m_LaSec = (latitude - m_LaDeg - m_LaMin / 60.) * 3600;
-
             m_Longitude = longitude;
             m_Latitude = latitude;
             m_RadLo = longitude * Math.PI / 180.;
@@ -1210,7 +1207,7 @@ public class MapsActivity extends FragmentActivity
     }
 
     public String turnTo(MyLatLng A, MyLatLng B) {
-        double turnDrgree = lastRotateDegree - getAngle(A, B);
+        double turnDrgree = lastRotateDegree-getAngle(A, B) ;
         if (turnDrgree < 15 && turnDrgree > -15) {
             return "STRAIGHT";
         } else if (turnDrgree >= 15 && turnDrgree <= 60) {

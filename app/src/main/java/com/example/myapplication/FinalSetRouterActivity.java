@@ -119,6 +119,7 @@ public class FinalSetRouterActivity extends FragmentActivity
 
     Boolean setMarkerStatus = true;
     int markerTotal;
+    int markerTotal_point;
 
     ArrayList<MarkerOptions> markerArrayList;
     ArrayList<MarkerOptions> busMarkerArrayList;
@@ -238,6 +239,7 @@ public class FinalSetRouterActivity extends FragmentActivity
         ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 123);
         currentLocation = null;
         markerTotal=0;
+        markerTotal_point=0;
         firstLocation = null;
         firstMarker=null;
         requestQueue = Volley.newRequestQueue(this);
@@ -254,6 +256,7 @@ public class FinalSetRouterActivity extends FragmentActivity
                     arrayPoints=new ArrayList<>();
                     arraySteps=new ArrayList<>();
                     markerTotal=0;
+                    markerTotal_point=0;
 
                     LatLng tmpLatLng=convertAddressToLanLng(txtAddress.getText().toString());
                     if(tmpLatLng!=null){
@@ -262,11 +265,12 @@ public class FinalSetRouterActivity extends FragmentActivity
                         points_state.add(1);
                         //firstMarker = mMap.addMarker(new MarkerOptions().position(tmpLatLng).title("I'm here...").snippet("now"));
                         MarkerOptions tmpMarker = new MarkerOptions()
-                                .title("0")
+                                .title("0_0")
                                 .snippet("起始點")
                                 .position(firstLocation)
                                 .draggable(true);
                         markerTotal++;
+                        markerTotal_point++;
                         mMap.addMarker(tmpMarker);
                         markerArrayList.add(tmpMarker);
 
@@ -323,7 +327,7 @@ public class FinalSetRouterActivity extends FragmentActivity
                 uploadToServer(arraySteps, personName, personEmail);
             }
         });
-        markerTotal = 0;
+
         moveTimes = false;
         //--------指南針--------------------
         lastRotateDegree = 0;
@@ -524,6 +528,7 @@ public class FinalSetRouterActivity extends FragmentActivity
 
             @Override//設定info類型
             public View getInfoContents(Marker marker) {
+                Log.i("infocontent",marker.getTitle()+":"+marker.getSnippet());
                 if (marker.getSnippet().equals("bus")) {          //點公車
                     if (isLoaded) {
                         CARDSTATE = STATE_BUS_NUM;
@@ -546,6 +551,9 @@ public class FinalSetRouterActivity extends FragmentActivity
                     return null;
                 }else {
                     // Setting up the infoWindow with current's marker info
+                    Log.i("infoTitle",marker.getTitle());
+
+
                     infoButtonListener.setMarker(marker);
                     // We must call this to set the current marker and infoWindow references
                     // to the MapWrapperLayout
@@ -579,15 +587,17 @@ public class FinalSetRouterActivity extends FragmentActivity
                                 polyline.remove();
                             }
                             polyline = mMap.addPolyline(lineOptions);
-
+                            Log.i("markerTotal_addpoint",markerTotal+"");
                             MarkerOptions tmpMarker = new MarkerOptions()
-                                    .title(markerTotal + "")
+                                    .title(markerTotal +"_"+markerTotal_point)
                                     .snippet("router")
                                     .position(latLng)
                                     .draggable(true);
+                            Log.i("testTitle",tmpMarker.getTitle());
                             mMap.addMarker(tmpMarker);
                             markerArrayList.add(tmpMarker);
                             markerTotal++;
+                            markerTotal_point++;
                             //mMap.addPolyline(lineOptions); // 畫出多邊形
                         } else {
                             Log.d("onPostExecute", "draw line error!");
@@ -608,27 +618,31 @@ public class FinalSetRouterActivity extends FragmentActivity
 
             @Override
             public void onMarkerDragEnd(Marker marker) {
-
+                Log.i("testTitleDrag",marker.getTitle());
+                String[] tokens = marker.getTitle().split("_");
                 try{
-                    points.set(Integer.parseInt(marker.getTitle()), marker.getPosition());
-                    markerArrayList.get(Integer.parseInt(marker.getTitle())).position(marker.getPosition());
+                    points.set(Integer.parseInt(tokens[0]), marker.getPosition());
+                    markerArrayList.get(Integer.parseInt(tokens[1])).position(marker.getPosition());
                 } catch (Exception e) {
+                    Log.i("markerTotal","drag 出錯");
                     points.set(0, marker.getPosition());
                     markerArrayList.get(0).position(marker.getPosition());
                 }
-                if(Integer.parseInt(marker.getTitle())==0){
+
+                if(Integer.parseInt(tokens[0])==0){
+                    firstLocation=marker.getPosition();
                     if(convertLanLngToAddress(marker.getPosition())!=null){
                         txtAddress.setText(convertLanLngToAddress(marker.getPosition()));
                         txtLat.setText(marker.getPosition().latitude+"");
                         txtLng.setText(marker.getPosition().longitude+"");
                         requestBusStation(points.get(0));
 
-                        MarkerOptions tmpMarker = new MarkerOptions()
+                    /*    MarkerOptions tmpMarker = new MarkerOptions()
                                 .title("0")
                                 .snippet("這是公車")
                                 .position(firstLocation)
                                 .draggable(true);
-                        markerTotal++;
+                        markerTotal++;*/
                     }
                 }
 
@@ -645,7 +659,7 @@ public class FinalSetRouterActivity extends FragmentActivity
                 } else {
                     Log.d("onPostExecute", "draw line error!");
                 }
-                if (points_state.get(Integer.parseInt(marker.getTitle())) == 0) {
+                if (points_state.get(Integer.parseInt(tokens[0])) == 0) {
                     drawAll();
                 } else {
                     if(markerTotal<2){
@@ -1043,7 +1057,7 @@ public class FinalSetRouterActivity extends FragmentActivity
                     }
 
                     for (int i = 0; i < markerArrayList.size(); i++) {
-                        markerArrayList.get(i).title(i + "");
+                       // markerArrayList.get(i).title(i + "");
                         mMap.addMarker(markerArrayList.get(i));
                     }
                     for (int i = 0; i < busMarkerArrayList.size(); i++) {
@@ -1313,6 +1327,7 @@ public class FinalSetRouterActivity extends FragmentActivity
     // func=1:用來看下車車站中的路線那些有經過上車車站
     // func=2:用來查詢stopsequence
     public void StopOfRoute(final String RouteNumb, final String dir, final int func) {
+        String encode_string=encode(RouteNumb);
         routeOrder = new ArrayList<>();
         destationLat = new ArrayList<>();
         destationLon = new ArrayList<>();
@@ -1321,7 +1336,9 @@ public class FinalSetRouterActivity extends FragmentActivity
         City_a = "Taipei";
         Query = "?$select=Stops&$top=30&$format=JSON";
         GetStopOfRoute GetStopOfRoute = AppClientManager.getClient().create(GetStopOfRoute.class);
-        GetStopOfRoute.GetStopOfRoute(Data, City_a, RouteNumb, Query).enqueue(new retrofit2.Callback<List<StopOfRoute>>() {
+
+        //----------vvvvvvvvvv 改RouterNumb------------
+        GetStopOfRoute.GetStopOfRoute(Data, City_a, encode_string, Query).enqueue(new retrofit2.Callback<List<StopOfRoute>>() {
             @Override
             public void onResponse(retrofit2.Call<List<StopOfRoute>> call, retrofit2.Response<List<StopOfRoute>> response) {
                 Log.e("OkHttp", "車牌順序成功了啦 response = " + response.body().toString());
@@ -1713,6 +1730,8 @@ public class FinalSetRouterActivity extends FragmentActivity
                                     .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stophand_round",100,100)));
                             mMap.addMarker(tmpMarker);
                             busMarkerArrayList.add(tmpMarker);
+                            markerTotal=markerTotal+2;
+                            Log.i("markerTotal1:",markerTotal+"");
                         } else {
                             points.add(startLatLng);
                             points_state.add(1);
@@ -1735,7 +1754,8 @@ public class FinalSetRouterActivity extends FragmentActivity
                                     .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stophand_round",100,100)));
                             mMap.addMarker(tmpMarker);
                             busMarkerArrayList.add(tmpMarker);
-
+                            markerTotal=markerTotal+2;
+                            Log.i("markerTotal2:",markerTotal+"");
                         }
 
                         Log.i("check end1",firstLocation+":  :"+points.get(points.size() - 1));
@@ -1770,6 +1790,8 @@ public class FinalSetRouterActivity extends FragmentActivity
                                     .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stophand_round",100,100)));
                             mMap.addMarker(tmpMarker);
                             busMarkerArrayList.add(tmpMarker);
+                            markerTotal=markerTotal+2;
+                            Log.i("markerTotal3:",markerTotal+"");
                         } else {
                             points.add(startLatLng);
                             points_state.add(1);
@@ -1792,7 +1814,8 @@ public class FinalSetRouterActivity extends FragmentActivity
                                     .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stophand_round",100,100)));
                             mMap.addMarker(tmpMarker);
                             busMarkerArrayList.add(tmpMarker);
-
+                            markerTotal=markerTotal+2;
+                            Log.i("markerTotal4:",markerTotal+"");
 
                         }
                         Log.i("check end2",firstLocation+":  :"+points.get(points.size() - 1));
@@ -1926,5 +1949,20 @@ public class FinalSetRouterActivity extends FragmentActivity
                 //Toast.makeText(MapsActivity.this, "點距" + distance, Toast.LENGTH_SHORT).show();
             }
         }
+    }
+    private String encode(String str) {
+        //根據預設編碼獲取位元組陣列
+        String hexString = "0123456789ABCDEF";
+        byte[] bytes = str.getBytes();
+        StringBuilder sb = new StringBuilder(bytes.length * 2);
+        //將位元組陣列中每個位元組拆解成2位16進位制整數
+        for (int i = 0; i < bytes.length; i++) {
+            sb.append("%");
+            sb.append(hexString.charAt((bytes[i] & 0xf0) >> 4));
+            sb.append(hexString.charAt((bytes[i] & 0x0f) >> 0));
+        }
+        Log.e("encode", sb.toString());
+        //%E6%8D%B7%E9%81%8B%E8%A5%BF%E9%96%80%E7%AB%99
+        return sb.toString();
     }
 }

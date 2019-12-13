@@ -186,10 +186,9 @@ public class FinalSetRouterActivity extends FragmentActivity
     List<String> routeOrder = new ArrayList<String>();
     List<String> routeList = new ArrayList<String>();
     List<String> SameDepartureRouteList = new ArrayList<String>();
-    List<String> SameDestationRouteList = new ArrayList<String>();
-    List<String> SameStopName = new ArrayList<String>();
     List<Double> destationLat = new ArrayList<Double>();
     List<Double> destationLon = new ArrayList<Double>();
+    List<Integer> routeSquence = new ArrayList<Integer>();
     //----------------------------Test Data------------------------------
     String StopName1 = "金陵女中";
     double endLat;
@@ -215,14 +214,14 @@ public class FinalSetRouterActivity extends FragmentActivity
     private List<RouterData> data_list;
     LatLng routerPoints;
     String tmpTX;
-
+    int upload_optionNum;
     Button btnUpload;
     Button btnCheckAddress;
 
     List<Address> addressName;
     List<Address> addressLatLng;
 
-    TextView txtLat,txtLng;
+    EditText txtRouterName;
     EditText txtAddress;
 
 
@@ -230,12 +229,11 @@ public class FinalSetRouterActivity extends FragmentActivity
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_final_set_router);
-        txtLat=findViewById(R.id.txt_lat);
-        txtLng=findViewById(R.id.txt_lon);
+
         btnCheckAddress=findViewById(R.id.btn_check_addressname);
         btnUpload = findViewById(R.id.btnUpload);
         txtAddress=findViewById(R.id.txt_addressname);
-
+        txtRouterName=findViewById(R.id.txt_router_name);
         ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 123);
         currentLocation = null;
         markerTotal=0;
@@ -275,8 +273,6 @@ public class FinalSetRouterActivity extends FragmentActivity
                         markerArrayList.add(tmpMarker);
 
 
-                        txtLat.setText(tmpLatLng.latitude+"");
-                        txtLng.setText(tmpLatLng.longitude+"");
                         mMap.moveCamera(CameraUpdateFactory.newLatLng(tmpLatLng));
                         requestBusStation(tmpLatLng);
                         drawAll();
@@ -324,7 +320,12 @@ public class FinalSetRouterActivity extends FragmentActivity
         btnUpload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                uploadToServer(arraySteps, personName, personEmail);
+                if(txtRouterName.getText().toString().equals("")){
+                    Toast.makeText(FinalSetRouterActivity.this,"請輸入路線名稱",Toast.LENGTH_LONG).show();
+                }else{
+                    uploadToServer(arraySteps, personName, personEmail);
+                }
+
             }
         });
 
@@ -535,7 +536,7 @@ public class FinalSetRouterActivity extends FragmentActivity
                         StopName1 = marker.getTitle();
                         //RouteOrder();
                         //Log.e("HELLO 整合",routeList.size()+"");
-                        RouteOfStation(marker.getPosition().latitude, marker.getPosition().longitude, 50, 0); //抓附近公車站的公車號碼
+                        RouteOfStation(marker.getPosition().latitude, marker.getPosition().longitude, 50); //抓附近公車站的公車號碼
                         startLatLng = new LatLng(marker.getPosition().latitude, marker.getPosition().longitude);
                         //StopOfRoute("513","0",0);//抓會到的公車站
                         //SameDestinationRoute("513","1","中興街口","捷運輔大站");
@@ -633,8 +634,7 @@ public class FinalSetRouterActivity extends FragmentActivity
                     firstLocation=marker.getPosition();
                     if(convertLanLngToAddress(marker.getPosition())!=null){
                         txtAddress.setText(convertLanLngToAddress(marker.getPosition()));
-                        txtLat.setText(marker.getPosition().latitude+"");
-                        txtLng.setText(marker.getPosition().longitude+"");
+
                         requestBusStation(points.get(0));
 
                     /*    MarkerOptions tmpMarker = new MarkerOptions()
@@ -833,6 +833,11 @@ public class FinalSetRouterActivity extends FragmentActivity
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
+                    try {
+                        objFile.put("busNum", upload_optionNum);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
                     Map.put("router", objFile.toString());
                 }
 
@@ -840,7 +845,7 @@ public class FinalSetRouterActivity extends FragmentActivity
 
                 Map.put("ID", personName);
                 Map.put("email", personEmail);
-                Map.put("router_name", "testfile");
+                Map.put("router_name", txtRouterName.getText().toString());
                 return Map;
             }
         };
@@ -1258,58 +1263,34 @@ public class FinalSetRouterActivity extends FragmentActivity
         return angle;
     }
     //-----------筱淇---------------
-    //點擊app上的公車mark可以獲得座標，利用座標找出站牌名稱，並且列出站牌中有哪幾路公車
-    //這站有哪幾路公車 資料存在 routeList
-    //distance:單位是公尺&抓下來DataType=int
-    //列德func都填0 func=1:用來下車車站中有哪幾路有到上車車站的將資料存在SameDestationRouteList
-    public void RouteOfStation(double CenterLat, double CenterLon, int distance, final int func) {
+    //列出站牌中有哪幾路公車
+    public void RouteOfStation(double CenterLat, double CenterLon, int distance) {
         routeList = new ArrayList<>();
         Log.e("loc", "現在執行的函式是= RouteOfStation");
         Data = "Station";
         City_a = "Taipei";
         Query = "?$select=Stops&$top=10&$spatialFilter=nearby(StationPosition%2C" +
                 CenterLat + "%2C" + CenterLon + "%2C" + distance + ")&$format=JSON";
-        if (func == 1) {
-            Query = "?$select=Stops&$top=1&$spatialFilter=nearby(StationPosition%2C" +
-                    CenterLat + "%2C" + CenterLon + "%2C" + distance + ")&$format=JSON";
-        }
+
         GetStation GetStation = AppClientManager.getClient().create(GetStation.class);
         GetStation.GetStation(Data, City_a, "", Query).enqueue(new retrofit2.Callback<List<Station>>() {
             @Override
             public void onResponse(retrofit2.Call<List<Station>> call, retrofit2.Response<List<Station>> response) {
                 Log.e("OkHttp", "車站的路線載入成功了啦 response = " + response.body().toString());
                 List<Station> list = response.body();
-                if (func == 1) {
-                    SameDestationRouteList.clear();
-                    SameStopName.clear();
-                }
                 for (Station p : list) {
                     StopNameStart = p.getStops().get(0).getStopName().getZhTw();
-                    //for(int i=0;i<10;i++){
-                    //    StopNameStart=p.getStops().get(i).getStopName().getZhTw();
-                    //}
                     for (int i = 0; i < p.getStops().size(); i++) {
-                        if (func == 1) {
-
-                            SameDestationRouteList.add(p.getStops().get(i).getRouteName().getZhTw());
-                            Log.e("func<2>下車站牌的全部路線:", p.getStops().get(i).getRouteName().getZhTw());
-                        } else {
-                            routeList.add(i, p.getStops().get(i).getRouteName().getZhTw());
-                            Log.e("RouteNumbList", p.getStops().get(i).getRouteName().getZhTw());
-                        }
-                    }
-                    if (func == 1) {
-                        for (int i = 0; i < SameDestationRouteList.size(); i++) {
-                            Log.e("func<3>要帶入StopOfRoute的", "下車路線=" + SameDestationRouteList.get(i));
-                            StopOfRoute(SameDestationRouteList.get(i), Dir, 1);
-                        }
+                        routeList.add(i, p.getStops().get(i).getRouteName().getZhTw());
+                        routeIDList.add(i,p.getStops().get(i).getStopID());
+                        Log.e("RouteNumbList", p.getStops().get(i).getRouteName().getZhTw());
+                        Log.e("routeIDList", p.getStops().get(i).getStopID());
                     }
                 }
                 setBusCard(routeList);
                 pvCustomOptions.setPicker(cardItem);
                 pvCustomOptions.show();
             }
-
             @Override
             public void onFailure(retrofit2.Call<List<Station>> call, Throwable t) {
                 Log.e("OkHttp", "車站的路線載入，怎麼會失敗");
@@ -1321,12 +1302,7 @@ public class FinalSetRouterActivity extends FragmentActivity
     //------------------------------------------------------------------------------
     //點選公車站中某一路公車，抓出這台公車的站牌順序資料，並且分為往返方向
     //站序資料存在routeOrder
-    //這路公車往?方向的站序資料//dir="0"表示去程 ; dir="1"表示返程
-    //ex RouteNumb=1211
-    //列德func都填0
-    // func=1:用來看下車車站中的路線那些有經過上車車站
-    // func=2:用來查詢stopsequence
-    public void StopOfRoute(final String RouteNumb, final String dir, final int func) {
+    public void StopOfRoute(final String RouteNumb, final String dir) {
         String encode_string=encode(RouteNumb);
         routeOrder = new ArrayList<>();
         destationLat = new ArrayList<>();
@@ -1348,25 +1324,10 @@ public class FinalSetRouterActivity extends FragmentActivity
                 for (StopOfRoute p : list) {
                     Log.e("func<!1>列出相同上車站牌的路線:", RouteNumb);
                     if (p.getDirection().toString().equals(dir)) {//確定方向
-                        Log.e("func<!2>列出相同上車站牌的路線:", RouteNumb);
                         for (int i = 0; i < p.getStops().size(); i++) {
-                            if (func == 1) {
-                                Log.e("func<!3>列出相同上車站牌的路線:", RouteNumb);
-                                Log.e("func testname ", i + ":" + p.getStops().get(i).getStopName().getZhTw() + ",  " + Start);
-                                if (p.getStops().get(i).getStopName().getZhTw().equals(Start)) {
-                                    SameDepartureRouteList.add(RouteNumb);
-                                    Log.e("func<4>列出相同上車站牌的路線:", RouteNumb);
-                                }
-                            } else if (func == 2) {
-                                if (p.getStops().get(i).getStopName().getZhTw().equals(StopName1)) {
-                                    StopName1Squence = p.getStops().get(i).getStopSequence();
-                                    Log.e("這臺公車的stop sequence", StopName1Squence + "");
-
-                                    //---------------判斷預約--------------------
-                                    Resevation(dir);
-                                }
-                            } else {
                                 routeOrder.add(i, p.getStops().get(i).getStopName().getZhTw());
+                                routeSquence.add(i,p.getStops().get(i).getStopSequence());
+                            // TODO: 2019/12/4 要存stopsquence
                               //  destinationContain.put("route",p.getStops().get(i).getStopName().getZhTw());
                                 destationLat.add(i,p.getStops().get(i).getStopPosition().getPositionLat());
                                 destationLon.add(i,p.getStops().get(i).getStopPosition().getPositionLon());
@@ -1374,28 +1335,14 @@ public class FinalSetRouterActivity extends FragmentActivity
                                 //endLat = p.getStops().get(i).getStopPosition().getPositionLat();
                                 //endLon= p.getStops().get(i).getStopPosition().getPositionLon();
                                 Log.e("列出下車站牌", p.getStops().get(i).getStopName().getZhTw());
-
-                            }
-
                         }
                     }
-
                 }
-                if (func == 1) {
-                    CARDSTATE = STATE_BUS_SAME;
-                    setBusCard(SameDepartureRouteList);
-                    pvCustomOptions.setPicker(cardItem);
-                    pvCustomOptions.show();
-                } else {
-                    CARDSTATE = STATE_BUS_STOP;
-                    setBusCard(routeOrder);
-                    pvCustomOptions.setPicker(cardItem);
-                    pvCustomOptions.show();
-                }
-
-
+                CARDSTATE = STATE_BUS_STOP;
+                setBusCard(routeOrder);
+                pvCustomOptions.setPicker(cardItem);
+                pvCustomOptions.show();
             }
-
             @Override
             public void onFailure(retrofit2.Call<List<StopOfRoute>> call, Throwable t) {
                 Log.e("OkHttp", "車牌順序的資料連接，怎麼會失敗");
@@ -1404,50 +1351,6 @@ public class FinalSetRouterActivity extends FragmentActivity
         });
         Log.d("loc", "現在執行結束的函式是= StopOfRoute");
     }
-
-    //------------------------------------------------------------------------------
-    //在某路公車的站牌序列中，選擇下車地點，利用上下車站牌找都有經過的公車路線
-    //(上車地點為點擊app上公車mark所查到的站牌)(方向確定)//dir="0"表示去程 ; dir="1"表示返程
-    //找出相同上下車地點的公車路線 資料存在 SameDepartureRouteList
-    public void SameDestinationRoute(String RouteNumb, final String dir, final String start, final String end) {
-        SameDepartureRouteList = new ArrayList<>();
-        Log.e("loc", "現在執行的函式是= SameDestinationRoute");
-        Data = "StopOfRoute";
-        City_a = "Taipei";
-        Query = "?$select=Stops&$top=30&$format=JSON";
-        GetStopOfRoute GetStopOfRoute = AppClientManager.getClient().create(GetStopOfRoute.class);
-        GetStopOfRoute.GetStopOfRoute(Data, City_a, RouteNumb, Query).enqueue(new retrofit2.Callback<List<StopOfRoute>>() {
-            @Override
-            public void onResponse(retrofit2.Call<List<StopOfRoute>> call, retrofit2.Response<List<StopOfRoute>> response) {
-                Log.e("OkHttp", "相同上下車地點的公車路線成功了啦 response = " + response.body().toString());
-                List<StopOfRoute> list = response.body();
-                for (StopOfRoute p : list) {
-                    if (p.getDirection().toString().equals(dir)) {//確定方向
-                        for (int i = 0; i < p.getStops().size(); i++) {
-                            if (p.getStops().get(i).getStopName().getZhTw().equals(end)) {
-                                endLat = p.getStops().get(i).getStopPosition().getPositionLat();
-                                endLon = p.getStops().get(i).getStopPosition().getPositionLon();
-                                Log.e("func<1>列出下車站牌的經緯度", p.getStops().get(i).getStopPosition().getPositionLat() + "," + p.getStops().get(i).getStopPosition().getPositionLon());
-                            }
-                        }
-                    }
-                }
-                Start = start;
-                Log.i("func start", start);
-                Dir = dir;
-                //列出下車站牌有哪些路線的公車
-                RouteOfStation(endLat, endLon, 50, 1);
-                Log.d("loc", "現在執行結束的函式是= SameDestinationRoute");
-            }
-
-            @Override
-            public void onFailure(retrofit2.Call<List<StopOfRoute>> call, Throwable t) {
-                Log.e("OkHttp", "相同上下車地點的公車路線的資料連接，怎麼會失敗");
-            }
-        });
-        Log.d("loc", "現在執行結束的函式是= SameDestinationRoute");
-    }
-
 
     public void setBusCard(List<String> busArrayList) {
         cardItem.clear();
@@ -1553,8 +1456,9 @@ public class FinalSetRouterActivity extends FragmentActivity
     }
     //------------------------------------------------------------------------------
     //用來預約公車司機
-
-    private void Resevation(final String dir) {
+    // TODO: 2019/12/4 需要輸入 DestnationSquence RouteNumb
+    private void Resevation(final String dir,final int DestnationSquence,final String RouteNumb) {
+        String encode_route = encode(RouteNumb);
         Log.e("loc", "現在執行的函式是= RealTimeNearStop");
         Data = "RealTimeNearStop";
         City_a = "Taipei";
@@ -1562,7 +1466,7 @@ public class FinalSetRouterActivity extends FragmentActivity
         Log.e("Query", Query);
 
         GetRealTimeNearStop GetRealTimeNearStop = AppClientManager.getClient().create(GetRealTimeNearStop.class);
-        GetRealTimeNearStop.GetRealTimeNearStop(Data, City_a, Route, Query).enqueue(new retrofit2.Callback<List<RealTimeNearStop>>() {
+        GetRealTimeNearStop.GetRealTimeNearStop(Data, City_a, encode_route, Query).enqueue(new retrofit2.Callback<List<RealTimeNearStop>>() {
             @Override
             public void onResponse(retrofit2.Call<List<RealTimeNearStop>> call, retrofit2.Response<List<RealTimeNearStop>> response) {
                 Log.e("OkHttp", "RealTimeNearStop response = " + response.body().toString());
@@ -1570,8 +1474,11 @@ public class FinalSetRouterActivity extends FragmentActivity
                 String theclostBus = "";
                 if (!list.isEmpty()) {
                     for (RealTimeNearStop p : list) {
-                        if (p.getStopSequence() < StopName1Squence) {
-                            theclostBus = p.getPlateNumb();
+                        if(p.getStopSequence()<DestnationSquence){
+                            theclostBus=p.getPlateNumb();
+                        }
+                        if(p.getStopSequence()>DestnationSquence){
+                            theclostBus="目前沒車";
                         }
                     }
                 }
@@ -1692,10 +1599,11 @@ public class FinalSetRouterActivity extends FragmentActivity
                 switch (CARDSTATE) {
                     case STATE_BUS_NUM:
                         tmpTX = tx;
-                        StopOfRoute(tx, "0", 0);
+                        StopOfRoute(tx, "0");
                         //pvCustomOptions.setPicker(cardItem);
                         break;
                     case STATE_BUS_STOP:
+                        upload_optionNum=options1;
 
                         Log.i("test same", "1:" + tmpTX + "name1" + StopNameStart + " name2:" + tx);
 
@@ -1883,8 +1791,7 @@ public class FinalSetRouterActivity extends FragmentActivity
         if (addressLatLng != null && addressLatLng.size() > 0) {
             tmpLatLng= new LatLng((addressLatLng.get(0).getLatitude()),(addressLatLng.get(0).getLongitude()));
 
-            txtLat.setText(tmpLatLng.latitude+"");
-            txtLng.setText(tmpLatLng.longitude+"");
+
             return tmpLatLng;
         }else {
             return null;

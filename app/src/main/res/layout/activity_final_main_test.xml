@@ -9,61 +9,67 @@
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
    >
+
     <android.support.design.widget.CoordinatorLayout
         android:id="@+id/baseContent"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         >
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
-
-
-        <com.example.myapplication.MapWrapperLayout
-            android:id="@+id/map_relative_layout"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:layout_margin="5dp">
-
-            <fragment
-                android:id="@+id/fragment_map"
-                android:name="com.google.android.gms.maps.SupportMapFragment"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                tools:context=".FinalMainActivity" />
-        </com.example.myapplication.MapWrapperLayout>
-
-
-        <Button
-            android:id="@+id/btn_test"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="測試" />
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:orientation="vertical"
-            android:layout_weight="2">
-            <android.support.v7.widget.RecyclerView
-                android:id="@+id/recycler_view"
+            android:layout_height="match_parent"
+            android:background="#DA9F93"
+            android:orientation="vertical">
+
+
+            <com.example.myapplication.MapWrapperLayout
+                android:id="@+id/map_relative_layout"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                card_view:cardUseCompatPadding="true"
-                card_view:cardElevation="5dp"
-                card_view:cardCornerRadius="5dp"
-                android:scrollbars="vertical"
-                android:layout_marginLeft="6dp"
-                android:layout_marginRight="6dp"
-                android:layout_marginTop="6dp" />
+                android:layout_height="0dp"
+                android:layout_margin="5dp"
+                android:layout_weight="1">
+
+                <fragment
+                    android:id="@+id/fragment_map"
+                    android:name="com.google.android.gms.maps.SupportMapFragment"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginLeft="5dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginRight="5dp"
+                    tools:context=".FinalMainActivity" />
+            </com.example.myapplication.MapWrapperLayout>
+
+
+            <!--   <Button
+            android:id="@+id/btn_test"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="測試" />-->
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="2"
+                android:orientation="vertical">
+
+                <android.support.v7.widget.RecyclerView
+                    android:id="@+id/recycler_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="6dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginRight="6dp"
+                    android:scrollbars="vertical"
+                    card_view:cardCornerRadius="5dp"
+                    card_view:cardElevation="5dp"
+                    card_view:cardUseCompatPadding="true" />
+            </LinearLayout>
+
+
         </LinearLayout>
-
-
-
-    </LinearLayout>
 
         <android.support.design.widget.FloatingActionButton
             android:id="@+id/fab"
@@ -73,13 +79,12 @@
             android:layout_margin="20.0dip"
             android:baselineAlignBottom="true"
             android:scaleType="center"
-            android:src="@drawable/ic_mic_black_80dp"
-            app:backgroundTint="#FF0000"
-            app:fabCustomSize="160dp"
-            app:maxImageSize="80dp"
-            app:fabSize="auto"
+            android:src="@drawable/micro"
             app:borderWidth="0dp"
-            app:pressedTranslationZ="12dp" />
+            app:fabCustomSize="150dp"
+            app:fabSize="auto"
+            app:maxImageSize="150dp"
+            app:pressedTranslationZ="30dp" />
     </android.support.design.widget.CoordinatorLayout>
 
 

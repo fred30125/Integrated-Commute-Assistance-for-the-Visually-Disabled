@@ -107,7 +107,7 @@ public class FinalMainActivity extends FragmentActivity
     private DrawerLayout drawerLayout;
     private NavigationView navigation_view;
     FloatingActionButton fab;
-    Button testButton;
+   // Button testButton;
 
     //--------給個資-----------
     TextView textView_name;
@@ -230,7 +230,7 @@ public class FinalMainActivity extends FragmentActivity
 
 
 //-----------------瑋浩----------------------
-        testButton = findViewById(R.id.btn_test);
+      //  testButton = findViewById(R.id.btn_test);
         drawerLayout = findViewById(R.id.drawer_layout);
         navigation_view = findViewById(R.id.navigation_view);
         hView = navigation_view.getHeaderView(0);
@@ -341,13 +341,13 @@ public class FinalMainActivity extends FragmentActivity
             }
         };
 
-        testButton.setOnClickListener(new View.OnClickListener() {
+    /*    testButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 how_to_move();
                 //handler.postDelayed(runnable, 0);
             }
-        });
+        });*/
 
         routeAdapter.setOnItemClickListener(new RouteAdapter.OnItemClickListener() {
             @Override

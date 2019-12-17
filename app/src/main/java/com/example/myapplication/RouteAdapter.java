@@ -1,13 +1,19 @@
 package com.example.myapplication;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+
 import java.util.List;
 
 
@@ -16,6 +22,7 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteAdapter.ViewHolder>{
     private OnItemClickListener mOnItemClickListener;
     private List<RouterData> mRouterData;
     //define interface
+
     public interface OnItemClickListener {
         void onItemClick(int position);
     }
@@ -24,10 +31,12 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteAdapter.ViewHolder>{
     }
     public static class ViewHolder extends RecyclerView.ViewHolder {
         public TextView description;
+        public ImageView imageView;
 
         public ViewHolder(View itemView,final OnItemClickListener listener) {
             super(itemView);
             description=itemView.findViewById(R.id.description);
+            imageView=itemView.findViewById((R.id.imageView));
 
 
             itemView.setOnClickListener(new View.OnClickListener() {
@@ -62,6 +71,7 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteAdapter.ViewHolder>{
 
         RouterData routerData=mRouterData.get(i);
         viewHolder.description.setText(routerData.getDescription());
+        viewHolder.imageView.setImageResource(R.drawable.rise);
 
     }
 

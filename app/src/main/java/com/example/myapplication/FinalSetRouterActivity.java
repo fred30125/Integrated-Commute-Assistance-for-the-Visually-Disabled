@@ -22,9 +22,12 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -94,9 +97,9 @@ import okhttp3.Response;
 
 import static com.example.myapplication.Constants.BUS_URL;
 
-public class FinalSetRouterActivity extends FragmentActivity
-        implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
-
+public class FinalSetRouterActivity extends AppCompatActivity
+    implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
+    private android.support.v7.app.ActionBar mActionBar;
     private GoogleMap mMap;
     private GoogleApiClient googleApiClient;
     // Location請求物件
@@ -225,6 +228,7 @@ public class FinalSetRouterActivity extends FragmentActivity
     EditText txtAddress;
 
 
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -243,6 +247,20 @@ public class FinalSetRouterActivity extends FragmentActivity
         requestQueue = Volley.newRequestQueue(this);
         markerArrayList=new ArrayList<>();
         busMarkerArrayList=new ArrayList<>();
+
+
+        mActionBar = getSupportActionBar();
+        //禁用ActionBar標題
+        mActionBar.setDisplayShowTitleEnabled(true);
+        mActionBar.setLogo(R.drawable.icon2);
+        mActionBar.setTitle("行動輔助(測試用)");
+
+        //禁用ActionBar圖示
+        mActionBar.setDisplayUseLogoEnabled(true);
+        //禁用ActionBar返回鍵
+        mActionBar.setDisplayShowHomeEnabled(true);
+
+
         btnCheckAddress.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -1872,4 +1890,14 @@ public class FinalSetRouterActivity extends FragmentActivity
         //%E6%8D%B7%E9%81%8B%E8%A5%BF%E9%96%80%E7%AB%99
         return sb.toString();
     }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.nav_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+
+
+
 }

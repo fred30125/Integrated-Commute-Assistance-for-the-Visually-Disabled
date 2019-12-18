@@ -9,7 +9,6 @@
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
    >
-
     <android.support.design.widget.CoordinatorLayout
         android:id="@+id/baseContent"
         android:layout_width="match_parent"
@@ -20,16 +19,16 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="#DA9F93"
+            android:background="#fffff0"
             android:orientation="vertical">
 
 
             <com.example.myapplication.MapWrapperLayout
                 android:id="@+id/map_relative_layout"
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
+                android:layout_height="150dp"
                 android:layout_margin="5dp"
-                android:layout_weight="1">
+                android:layout_weight="0.4">
 
                 <fragment
                     android:id="@+id/fragment_map"
@@ -101,7 +100,9 @@
         android:layout_gravity="end"
         android:layout_height="match_parent"
         app:menu="@menu/activity_final_main_menu"
-        app:headerLayout="@layout/header_menu"/>
+        app:headerLayout="@layout/header_menu"
+        />
+
 
     <!--headerLayout：於側邊選單中的上方加入圖片、文字...-->
 

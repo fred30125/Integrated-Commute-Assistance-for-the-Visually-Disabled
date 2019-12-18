@@ -71,7 +71,7 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteAdapter.ViewHolder>{
 
         RouterData routerData=mRouterData.get(i);
         viewHolder.description.setText(routerData.getDescription());
-        viewHolder.imageView.setImageResource(R.drawable.rise);
+        viewHolder.imageView.setImageResource(R.drawable.arrow_blue);
 
     }
 

@@ -1,12 +1,14 @@
 package com.example.myapplication;
 
 import android.Manifest;
+import android.app.ActionBar;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.graphics.Color;
 import android.hardware.Sensor;
@@ -30,6 +32,8 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -102,10 +106,11 @@ import static com.example.myapplication.MapsActivity.getPixelsFromDp;
 import static java.lang.StrictMath.abs;
 import static java.lang.Thread.sleep;
 
-public class FinalMainActivity extends FragmentActivity
+public class FinalMainActivity extends AppCompatActivity
         implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, OnInitListener {
     private DrawerLayout drawerLayout;
     private NavigationView navigation_view;
+    private android.support.v7.app.ActionBar mActionBar;
     FloatingActionButton fab;
    // Button testButton;
 
@@ -227,6 +232,18 @@ public class FinalMainActivity extends FragmentActivity
 
 
         requestQueue = Volley.newRequestQueue(this);
+        mActionBar = getSupportActionBar();
+        //禁用ActionBar標題
+        mActionBar.setDisplayShowTitleEnabled(true);
+        mActionBar.setLogo(R.drawable.icon2);
+        mActionBar.setTitle("行動輔助(測試用)");
+
+        //禁用ActionBar圖示
+        mActionBar.setDisplayUseLogoEnabled(true);
+        //禁用ActionBar返回鍵
+        mActionBar.setDisplayShowHomeEnabled(true);
+        //getActionBar().setDisplayUseLogoEnabled(true);
+
 
 
 //-----------------瑋浩----------------------
@@ -429,7 +446,8 @@ public class FinalMainActivity extends FragmentActivity
     private void setRouterName() {
         if (getRouterNameArr != null) {
             for (int i = 0; i < getRouterNameArr.size(); i++) {
-                navigation_view.getMenu().add(0, i, 0, getRouterNameArr.get(i));
+                navigation_view.getMenu().add(0, i, 0, getRouterNameArr.get(i)).setIcon(R.drawable.map_icon);
+
             }
         }
     }
@@ -1781,5 +1799,12 @@ public class FinalMainActivity extends FragmentActivity
 
         }
 
+    }
+        //actionbar for 筱淇
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.nav_menu, menu);
+        return super.onCreateOptionsMenu(menu);
     }
 }

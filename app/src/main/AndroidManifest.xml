@@ -38,7 +38,10 @@
 
         <activity
             android:name=".FinalMainActivity"
-            android:theme="@style/Theme.AppCompat.Light" />
+            android:colorMode="default"
+            android:label="行動輔助(測試用)"
+            android:logo="@drawable/icon"
+            android:theme="@style/actionbarTheme" />
         <activity
             android:name=".MapsActivity"
             android:label="@string/title_activity_maps" />
@@ -50,7 +53,11 @@
             android:label="@string/title_activity_maps" />
         <activity
             android:name=".FinalSetRouterActivity"
-            android:label="@string/title_activity_maps" />
+            android:logo="@drawable/icon"
+            android:label="行動輔助(測試用)"
+            android:icon="@drawable/icon"
+            android:theme="@style/setting"
+            />
         <activity
             android:name=".RegisterActivity"
             android:configChanges="orientation|keyboardHidden"

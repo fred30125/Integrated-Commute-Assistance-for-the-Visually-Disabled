@@ -3,14 +3,9 @@
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/add"
-            android:orderInCategory="5"
-            android:icon="@drawable/android"
-            android:title="點此新增"/>
-
-
-
-
-
+            android:orderInCategory="1"
+            android:icon="@drawable/plus"
+            android:title="點此新增" />
 
     </group>
 </menu>

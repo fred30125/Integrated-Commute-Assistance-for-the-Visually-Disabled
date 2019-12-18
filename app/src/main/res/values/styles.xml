@@ -18,4 +18,18 @@
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="actionbarTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">#1d2d44</item>
+        <item name="colorPrimaryDark">#1d2d44</item>
+        <item name="colorAccent">#1d2d44</item>
+    </style>
+    <style name="setting" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">#1d2d44</item>
+        <item name="android:icon">@drawable/icon</item>
+        <item name="android:logo">@drawable/icon</item>
+    </style>
+
 </resources>

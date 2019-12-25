@@ -212,7 +212,7 @@ public class FinalMainActivity extends AppCompatActivity
     String macaddress;
     String doSearchMac;
     //redlight_Marker;
-    LatLng lightLatLng=new LatLng(25.03545731,121.50043766);
+    LatLng lightLatLng=new LatLng(25.035814, 121.500424);
     MarkerOptions lightMarker;
     boolean isLightDetect=false;
     boolean isStartHandler = false;
@@ -939,7 +939,8 @@ public class FinalMainActivity extends AppCompatActivity
                         departure = tokens[0];
                         departure_encode = encode(departure);
                         nowBusStop++;
-                        EstimateTime(departure_encode, "1",tokens[1]);
+                        Log.i("takecare",tokens[1]);
+                        EstimateTime(departure_encode, "0",tokens[1]);
 
                         //do_tts("最快公車"+tokens[1]+"到站時間為"+EstimatedTimeList.get(theFastBusNum).get("time"));
                     }
@@ -1392,19 +1393,22 @@ public class FinalMainActivity extends AppCompatActivity
         City_a = "Taipei";
         Query = "?$select=EstimateTime&$filter=StopName%2FZh_tw%20eq%20%27" + DespatureStop + "%27%20and%20Direction%20eq%20" + dir + "&$format=JSON";
         Log.e("Query", Query);
-        Log.d("Route", "路線:" + Route);
+        Log.d("Route", "路線:" + RouteNumb);
 
         GetEstimateTime GetEstimateTime = AppClientManager.getClient().create(GetEstimateTime.class);
-        GetEstimateTime.GetEstimateTime(Data, City_a, RouteNumb, Query).enqueue(new retrofit2.Callback<List<EsimateTime>>() {
+        GetEstimateTime.GetEstimateTime(Data, City_a, encode(RouteNumb), Query).enqueue(new retrofit2.Callback<List<EsimateTime>>() {
             @Override
             public void onResponse(retrofit2.Call<List<EsimateTime>> call, retrofit2.Response<List<EsimateTime>> response) {
                 Log.e("OkHttp", "這條線路的公車還有多久到這一站 response = " + response.body().toString());
                 List<EsimateTime> list = response.body();
+                Log.i("list",list.size()+"");
                 HashMap<String, String> EstimatedTime = new HashMap<>();
 
                 if (!list.isEmpty()) {
+                    Log.e("EstimatedTimeNotEmpty","0");
                     for (EsimateTime p : list) {
                         EstimatedTime.put("route", RouteNumb);
+
                         int min;
                         String mins;
                         if (p.getEstimateTime() != null) {
@@ -1420,7 +1424,12 @@ public class FinalMainActivity extends AppCompatActivity
 
                     }
                     if(!EstimatedTimeList.isEmpty()){
+                        Log.i("lookthis",EstimatedTimeList.getLast().get("route")+"");
                         do_tts("最快公車到達時間為"+EstimatedTimeList.getLast().get("time")+"分鐘");
+                        for(int i=0;i<EstimatedTimeList.size();i++){
+                            Log.i("route","numb "+i+" :"+EstimatedTimeList.get(i).get("route"));
+                            Log.i("route","numb "+i+" :"+EstimatedTimeList.get(i).get("time"));
+                        }
                     }
 
                 } else {
@@ -1449,9 +1458,10 @@ public class FinalMainActivity extends AppCompatActivity
         City_a = "Taipei";
         Query = "?$filter=Direction%20eq%20" + dir + "&$orderby=StopSequence%20%20asc&$top=10&$format=JSON";
         Log.e("Query", Query);
+        Log.e("route",RouteNumb);
 
         GetRealTimeNearStop GetRealTimeNearStop = AppClientManager.getClient().create(GetRealTimeNearStop.class);
-        GetRealTimeNearStop.GetRealTimeNearStop(Data, City_a, Route, Query).enqueue(new retrofit2.Callback<List<RealTimeNearStop>>() {
+        GetRealTimeNearStop.GetRealTimeNearStop(Data, City_a, encode(RouteNumb), Query).enqueue(new retrofit2.Callback<List<RealTimeNearStop>>() {
             @Override
             public void onResponse(retrofit2.Call<List<RealTimeNearStop>> call, retrofit2.Response<List<RealTimeNearStop>> response) {
                 Log.e("OkHttp", "RealTimeNearStop response = " + response.body().toString());
@@ -1459,6 +1469,7 @@ public class FinalMainActivity extends AppCompatActivity
                 String theclostBus = "";
                 if (!list.isEmpty()) {
                     for (RealTimeNearStop p : list) {
+                        Log.e("print",p.getPlateNumb());
                         if (p.getStopSequence() < DestnationSquence) {
                             theclostBus = p.getPlateNumb();
                         }
@@ -1474,6 +1485,7 @@ public class FinalMainActivity extends AppCompatActivity
                 if (!isReservation) {
                     String[] token0 = busMarkerArrayList.get(0).getTitle().split("_");
                     String[] token1 = busMarkerArrayList.get(1).getTitle().split("_");
+                    Log.i("testreser",theclostBus+" "+token0[0]+" "+token1[0]);
                     reservationToDatabase(theclostBus, token0[0], token1[0]);
                     isReservation = true;
                 } else {

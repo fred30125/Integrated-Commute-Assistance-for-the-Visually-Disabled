@@ -212,7 +212,7 @@ public class FinalMainActivity extends AppCompatActivity
     String macaddress;
     String doSearchMac;
     //redlight_Marker;
-    LatLng lightLatLng=new LatLng(25.035814, 121.500424);
+    LatLng lightLatLng=new LatLng(24.994249, 121.541028);
     MarkerOptions lightMarker;
     boolean isLightDetect=false;
     boolean isStartHandler = false;
@@ -236,7 +236,7 @@ public class FinalMainActivity extends AppCompatActivity
         //禁用ActionBar標題
         mActionBar.setDisplayShowTitleEnabled(true);
         mActionBar.setLogo(R.drawable.icon2);
-        mActionBar.setTitle("行動輔助(測試用)");
+        mActionBar.setTitle("行動輔助");
 
         //禁用ActionBar圖示
         mActionBar.setDisplayUseLogoEnabled(true);
@@ -932,8 +932,8 @@ public class FinalMainActivity extends AppCompatActivity
             if (busMarkerArrayList.size() > nowBusStop) {
                 float promptDistance = getDistance(currentLocation, busMarkerArrayList.get(nowBusStop).getPosition());
                 if(nowBusStop%2==0){ //上車
-                    if (promptDistance < 30) {
-                        do_tts("請問是否要幫你預約公車");
+                    if (promptDistance < 20) {
+                     //   do_tts("請問是否要幫你預約公車");
                         tokens = busMarkerArrayList.get(0).getTitle().split("_");
                         //Route = encode(tokens[1]);
                         departure = tokens[0];
@@ -945,8 +945,13 @@ public class FinalMainActivity extends AppCompatActivity
                         //do_tts("最快公車"+tokens[1]+"到站時間為"+EstimatedTimeList.get(theFastBusNum).get("time"));
                     }
                 }else{ //抵達下車
-                    if (promptDistance < 30) {
-                        do_tts("抵達下車站");
+
+                    if (promptDistance < 50) {
+                        do_tts("即將抵達下車站 請做好準備");
+                        nowBusStop++;
+                        //do_tts("最快公車"+tokens[1]+"到站時間為"+EstimatedTimeList.get(theFastBusNum).get("time"));
+                    }else if (promptDistance < 20) {
+                        do_tts("抵達下車站 謝謝您的搭乘");
                         nowBusStop++;
                         //do_tts("最快公車"+tokens[1]+"到站時間為"+EstimatedTimeList.get(theFastBusNum).get("time"));
                     }
@@ -1609,7 +1614,7 @@ public class FinalMainActivity extends AppCompatActivity
 
                     if (jsonObject.names().get(0).equals("success")) {
                         // Toast.makeText(getApplicationContext(),"SUCCESS!!"+jsonObject.getString("success"),Toast.LENGTH_SHORT).show();
-                        do_tts("已幫你預約公車司機");
+                        do_tts("已幫你預約"+tokens[1]+"路線公車");
                     } else {
                         Toast.makeText(getApplicationContext(), "Error!!" + jsonObject.getString("error"), Toast.LENGTH_SHORT).show();
                     }

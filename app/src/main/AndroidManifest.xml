@@ -39,7 +39,7 @@
         <activity
             android:name=".FinalMainActivity"
             android:colorMode="default"
-            android:label="行動輔助(測試用)"
+            android:label="行動輔助"
             android:logo="@drawable/icon"
             android:theme="@style/actionbarTheme" />
         <activity
@@ -54,7 +54,7 @@
         <activity
             android:name=".FinalSetRouterActivity"
             android:logo="@drawable/icon"
-            android:label="行動輔助(測試用)"
+            android:label="行動輔助"
             android:icon="@drawable/icon"
             android:theme="@style/setting"
             />

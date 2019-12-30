@@ -253,7 +253,7 @@ public class FinalSetRouterActivity extends AppCompatActivity
         //禁用ActionBar標題
         mActionBar.setDisplayShowTitleEnabled(true);
         mActionBar.setLogo(R.drawable.icon2);
-        mActionBar.setTitle("行動輔助(測試用)");
+        mActionBar.setTitle("行動輔助");
 
         //禁用ActionBar圖示
         mActionBar.setDisplayUseLogoEnabled(true);
